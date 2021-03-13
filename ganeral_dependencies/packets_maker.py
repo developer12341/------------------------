@@ -1,6 +1,6 @@
 import uuid, math, time
 from ganeral_dependencies.global_values import *
-import RSA_crypt
+# import RSA_crypt
 import ntpath
 def extract_file_name(path):
     head, tail = ntpath.split(path)
@@ -14,7 +14,7 @@ class Packet_Maker:
         """
         self.e,self.N = public_key
         self.amount_info_packets = 0
-
+        self.content = content
         if request == SEND_FILE:
             #edge case - sending file without a name or a type
             if not file_path:
@@ -24,8 +24,8 @@ class Packet_Maker:
             #encrypt the file name and file itself
             self.file_name = self.encrypt(extract_file_name(file_path))
             with open(file_path,"rb") as f:
-                content = f.read()
-            self.content = self.encrypt(content)
+                self.content = f.read()
+            # self.content = self.encrypt(content)
 
             self.amount_info_packets += (len(self.file_name)//CONTENT_SIZE) + 1
 
@@ -51,7 +51,7 @@ class Packet_Maker:
 
             #encrypt the content of the image and the file name
             self.content = buffer.getvalue()
-            self.content = self.encrypt(self.content)
+            # self.content = self.encrypt(self.content)
             self.file_name = self.encrypt(file_name.encode("Ascii"))
 
             self.amount_info_packets += (len(self.file_name)//CONTENT_SIZE) + 1
@@ -59,11 +59,11 @@ class Packet_Maker:
         elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL]:
             self.amount_info_packets += 1
         
-        if request in [SEND_MSG, LOGIN, REGISTER]:
-            if content:
-                self.content = self.encrypt(content)
+        elif request in [SEND_MSG, LOGIN, REGISTER]:
             self.amount_info_packets += 1
                 
+        if self.content:
+            self.content = self.encrypt(content)
 
         packet_id = uuid.uuid4().bytes[:8]
 

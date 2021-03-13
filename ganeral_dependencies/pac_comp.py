@@ -1,5 +1,5 @@
 import struct
-from ganeral_dependencies.packets_maker import HEADER_SIZE, REG_LOGIN_SUC, REG_LOGIN_FAIL, R_L_FAIL,R_L_SUC
+from ganeral_dependencies.global_values import *
 
 def bytes_to_int(byte):
     number = 0

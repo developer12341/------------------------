@@ -18,7 +18,7 @@ FORGOT_MY_PASSWORD = b'\x0f'
 AUTHENTICAT_EMAIL = b'\x10'
 USERNAME_TAKEN = b'\x11'
 EMAIL_TAKEN = b'\x12'
-
+EMAIL_DOSENT_EXIST = b'\x13'
 
 #flags - to chack packet validitys and to let the reciver know for sure what this packet is
 CONTENT_PACKET = b'\x01'

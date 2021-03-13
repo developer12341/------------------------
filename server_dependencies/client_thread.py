@@ -1,5 +1,5 @@
 import threading, struct, datetime
-from ganeral_dependencies.packets_maker import *
+from ganeral_dependencies.global_values import *
 from server_dependencies import email_send
 class request_heandler(threading.Thread):
     def __init__(self, client,addr,client_e,client_d, client_N, db_obj, addr_name,addr_chatId,chatId_addr):
@@ -94,12 +94,12 @@ class request_heandler(threading.Thread):
         username = username.strip(b'\x00').decode("ascii")
         password = password.strip(b'\x00').decode("ascii")
         if self.db_obj.password_chack(username,password):
-            packet_obj = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
+            packets = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
         else:
-            packet_obj = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
+            packets = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
 
         
-        self.client.send(packet_obj.general_packets)
+        self.client.send(packets.general_packets)
 
     
     def register(self):
@@ -115,22 +115,24 @@ class request_heandler(threading.Thread):
         email = register_details[134:].strip(b'\x00')
 
         if self.db_obj.does_user_exist(username):
-            packet_obj = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
+            packets = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
         else:
             id_chacker = email_send.send_authentication_email(email.decode("ascii"))
             if not id_chacker:
-            packet_obj = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
-            self.current_details = [username,password,birthday,email]
+                packets = Packet_Maker(EMAIL_DOSENT_EXIST,(self.client_e,self.client_N))
+            else:
+                packets = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
+                self.current_details = [username,password,birthday,email]
 
-        self.client.send(packet_obj.general_packets)
+        self.client.send(next(packets))
 
     
     def authenticat_email(self):
-             
-        packet = self.client.recv(PACKET_SIZE)
-        request, request_id, packet_amount, packet_number, flag = self.buffer_extractor(packet[:HEADER_SIZE])
-        if packet_amoun
-        self.db_obj.insert_user(username,password,birthday,email)
+        pass
+        # packet = self.client.recv(PACKET_SIZE)
+        # request, request_id, packet_amount, packet_number, flag = self.buffer_extractor(packet[:HEADER_SIZE])
+        # if packet_amoun
+        # self.db_obj.insert_user(username,password,birthday,email)
 
 
     def connect_to_chat(self):

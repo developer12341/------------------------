@@ -7,7 +7,6 @@ def Create_Frame(register_frame,login_frame,chat_picker_frame):
 
     tkinter.Label(register_frame,text="Register",font="arial 15").grid(row=0,column=0,columnspan=2,sticky="NEW",pady=15)
 
-
     register_frame.grid_columnconfigure(0,weight=1)
     register_frame.grid_columnconfigure(1,weight=1)
 
