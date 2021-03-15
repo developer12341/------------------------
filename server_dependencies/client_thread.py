@@ -1,6 +1,7 @@
 import threading, struct, datetime
 from ganeral_dependencies.global_values import *
 from server_dependencies import email_send
+from ganeral_dependencies.packets_maker import Packet_Maker
 class request_heandler(threading.Thread):
     def __init__(self, client,addr,client_e,client_d, client_N, db_obj, addr_name,addr_chatId,chatId_addr):
         self.queue_requests = []
@@ -38,7 +39,7 @@ class request_heandler(threading.Thread):
             if packet_amount > 1:
                 for _ in range(packet_amount-1):
                     packet = self.client.recv(PACKET_SIZE)
-                    self.queue_requests.insert(packet)
+                    self.queue_requests.append(packet)
 
             #need to chack packet validity
 
@@ -59,6 +60,8 @@ class request_heandler(threading.Thread):
                 self.replace_keys()
             elif request == LEAVE_CHAT:
                 self.leave_chat()
+            elif request == AUTHENTICAT_EMAIL:
+                self.authenticat_email()
             elif request == CLOSE_CONN:
                 self.close_conn()
                 return
@@ -90,49 +93,60 @@ class request_heandler(threading.Thread):
         login_details = b''
         for packet in self.queue_requests:
             login_details += self.decrypt(packet[HEADER_SIZE:])
-        username, password = struct.unpack(f"{USERNAME_MAX_LEN}s {PASSWORD_MAX_LEN}s",login_details)
+        print(login_details)
+        username, password = login_details[:USERNAME_MAX_LEN], login_details[USERNAME_MAX_LEN:]
         username = username.strip(b'\x00').decode("ascii")
         password = password.strip(b'\x00').decode("ascii")
+        print(username)
+        print(password)
         if self.db_obj.password_chack(username,password):
-            packets = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
+            packets = Packet_Maker(REG_LOGIN_SUC,(self.client_e,self.client_N))
         else:
             packets = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
 
         
-        self.client.send(packets.general_packets)
+        self.client.send(next(packets))
 
     
     def register(self):
         #chack if the username and password is in the database
         #if true then get them into the database and if false then
-        register_details = bytes(0)
-        for packet in queue_requests:
+        register_details = b''
+        for packet in self.queue_requests:
             register_details += self.decrypt(packet[HEADER_SIZE:])
         username, password, Byear, Bmonth, Bday = struct.unpack("30s 100s 2s 1s 1s",register_details[:134])
         birthday= datetime.date(int.from_bytes(Byear,"big"), Bmonth[0], Bday[0])
-        username = username.strip(b'\x00')
-        password = password.strip(b'\x00')
-        email = register_details[134:].strip(b'\x00')
+        username = username.strip(b'\x00').decode("ascii")
+        password = password.strip(b'\x00').decode("ascii")
+        email = register_details[134:].strip(b'\x00').decode("ascii")
 
-        if self.db_obj.does_user_exist(username):
-            packets = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
+        if self.db_obj.does_user_exist(username,email):
+            packets = Packet_Maker(USERNAME_TAKEN,(self.client_e,self.client_N))
         else:
-            id_chacker = email_send.send_authentication_email(email.decode("ascii"))
+            id_chacker = email_send.send_authentication_email(email)
+            print(id_chacker)
             if not id_chacker:
                 packets = Packet_Maker(EMAIL_DOSENT_EXIST,(self.client_e,self.client_N))
             else:
                 packets = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
+                self.id_chacker = id_chacker
                 self.current_details = [username,password,birthday,email]
 
         self.client.send(next(packets))
 
     
     def authenticat_email(self):
-        pass
-        # packet = self.client.recv(PACKET_SIZE)
-        # request, request_id, packet_amount, packet_number, flag = self.buffer_extractor(packet[:HEADER_SIZE])
-        # if packet_amoun
-        # self.db_obj.insert_user(username,password,birthday,email)
+        pincode = b''
+        for packet in self.queue_requests:
+            pincode += packet[HEADER_SIZE:]
+        pincode = pincode.strip(b'\x00')
+        pincode = self.decrypt(pincode)
+        if self.id_chacker != pincode:
+            packets = Packet_Maker(AUTHENTICAT_EMAIL,self.public_key)
+        else:
+            packets = Packet_Maker(REG_LOGIN_SUC,self.public_key)
+            self.db_obj.insert_user(*self.current_details)
+
 
 
     def connect_to_chat(self):

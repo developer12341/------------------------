@@ -24,9 +24,9 @@ def main(server,keys):
         frame.grid(row=0, column=0, sticky='news')
 
     start_window.Create_Frame(start_frame,register_frame,login_frame)
-    register.Create_Frame(register_frame,login_frame,chat_picker_frame)
+    register.Create_Frame(register_frame,login_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
     login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
     email_validetor.Create_Frame(email_validetor_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
 
-    email_validetor_frame.tkraise()
+    register_frame.tkraise()
     root.mainloop() 

@@ -1,7 +1,7 @@
 import tkinter
 from ganeral_dependencies.packets_maker import Packet_Maker
 from ganeral_dependencies.global_values import *
-
+from ganeral_dependencies import pac_comp
 def Create_Frame(email_validetor_frame, register_frame, chat_picker_frame,server,public_key,private_key):
 
     def regiater():
@@ -12,6 +12,11 @@ def Create_Frame(email_validetor_frame, register_frame, chat_picker_frame,server
         if len(pincode) == 6:
             packets = Packet_Maker(AUTHENTICAT_EMAIL,public_key)
             server.send(next(packets))
+            server_response = server.recv(PACKET_SIZE)
+            if pac_comp.is_logged_in(server_response):
+                chat_picker_frame.tkraise()
+            else:
+                print("error msg")
 
 
     def on_clear():

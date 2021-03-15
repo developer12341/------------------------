@@ -1,5 +1,5 @@
 import sqlite3
-import datetime
+import datetime,time
 
 class User_Db:
     """Creates database with users table includes:
@@ -88,6 +88,7 @@ class User_Db:
         c = conn.execute(select_query,(username,password))
         result = c.fetchone()
         conn.close()
+        time.sleep(1)
         return not not (result)
 
     def is_user_logged_in(self,username):

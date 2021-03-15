@@ -20,15 +20,32 @@ def is_logged_in(packet):
     
 
     if request == REG_LOGIN_SUC:
-        if flag != R_L_SUC:
+        if flag != SOMETHING_ELSE:
             #packet validity
             raise Exception("this packet's request doesn't match the flag \n request == REG_LOGIN_SUC\n flag != R_L_SUC")
         return True
-    elif request == REG_LOGIN_FAIL:
-        if flag != R_L_FAIL:
+    elif request in [REG_LOGIN_FAIL,AUTHENTICAT_EMAIL]:
+        if flag != SOMETHING_ELSE:
             #packet validity
             raise Exception("this packet's request doesn't match the flag \n request == REG_LOGIN_FAIL\n flag != R_L_FAIL")
         return False
+    else:
+        #packet validity
+        raise Exception("this packet isn't REG_LOGIN type, please chack the server side for bugs")
+
+def can_auth_email(packet):
+    request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+    
+    #packet validity
+    if packet_number >= packet_amount:
+        raise Exception("this packets are invalid")
+    
+
+    if request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST]:
+        if flag != SOMETHING_ELSE:
+            #packet validity
+            raise Exception("this packet's request doesn't match the flag \n request == REG_LOGIN_SUC\n flag != R_L_SUC")
+        return request == AUTHENTICAT_EMAIL, request
     else:
         #packet validity
         raise Exception("this packet isn't REG_LOGIN type, please chack the server side for bugs")

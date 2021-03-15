@@ -1,9 +1,38 @@
-import tkinter,threading,datetime
-
-def Create_Frame(register_frame,login_frame,chat_picker_frame):
+import tkinter,threading,datetime, tkcalendar
+from ganeral_dependencies.global_values import *
+from ganeral_dependencies import pac_comp,packets_maker
+def Create_Frame(register_frame,login_frame,email_validetor_frame,server,public_key,private_key):
     
     def login():
         login_frame.tkraise()
+
+    def on_submit():
+        username = username_entry.get()
+        password = password_entry.get()
+        birthday = birthday_picker.get_date()
+        today = datetime.date.today()
+        email = email_entry.get()
+        if birthday > today:
+            date_error.grid(row=8,column=0,columnspan=2)
+        
+        content = username.encode("ascii") + bytes(USERNAME_MAX_LEN-len(username))
+        content += password.encode("ascii") + bytes(PASSWORD_MAX_LEN-len(password))
+        content += birthday.year.to_bytes(2,"big") + bytes([birthday.month]) + bytes([birthday.day])
+        content += email.encode("Ascii")
+        packets = packets_maker.Packet_Maker(REGISTER,public_key,content=content)
+        for packet in packets:
+            server.send(packet)
+
+        server_response = server.recv(PACKET_SIZE)
+        print(server_response)
+        can_auth, reasone =  pac_comp.can_auth_email(server_response)
+        if can_auth:
+            email_validetor_frame.tkraise()
+        else:
+            print("error msg")
+
+
+
 
     tkinter.Label(register_frame,text="Register",font="arial 15").grid(row=0,column=0,columnspan=2,sticky="NEW",pady=15)
 
@@ -30,45 +59,34 @@ def Create_Frame(register_frame,login_frame,chat_picker_frame):
     Re_password_entry = tkinter.Entry(register_frame,font=15,show="*")
     Re_password_entry.grid(row=5,column=1,pady=(20,0))
 
+    tkinter.Label(register_frame,text="birthday:",font=15).grid(row=6,column=0,sticky="E",pady=(20,0))
+    birthday_picker = tkcalendar.DateEntry(register_frame)
+    birthday_picker.grid(row=6,column=1)
+
+    tkinter.Label(register_frame,text="email:",font=15).grid(row=7,column=0,sticky="E",pady=(20,0))
+    email_entry = tkinter.Entry(register_frame,font=15)
+    email_entry.grid(row=7,column=1,pady=(20,0))
+
     Re_password_error = tkinter.Label(register_frame,text = "the passwords do not match", fg="red")
-    Re_password_error.grid(row=6,column=0,columnspan=2)
+    Re_password_error.grid(row=8,column=0,columnspan=2)
     Re_password_error.grid_forget()
 
-    tkinter.Label(register_frame,text="birthday:",font=15).grid(row=7,column=0,sticky="E",pady=(20,0))
-    birthday_frame = tkinter.Frame(register_frame)
-    birthday_frame.grid(row=7,column=1,pady=(20,0))
-
-    year = tkinter.Entry(birthday_frame,width=6,font=15)
-    year.grid(row=0,column=0)
-    year.insert(0,"YYYY")
-
-    tkinter.Label(birthday_frame,text="/",font=15).grid(row=0,column=1)
-
-    month = tkinter.Entry(birthday_frame,width=5,font=15)
-    month.grid(row=0,column=2)
-    month.insert(0,"MMM")
-    
-    tkinter.Label(birthday_frame,text="/",font=15).grid(row=0,column=3)
-    
-    day = tkinter.Entry(birthday_frame,width=5,font=15)
-    day.grid(row=0,column=4)
-    day.insert(0,"DDD")
 
     date_error = tkinter.Label(register_frame,text = "this date is not valid", fg="red")
-    date_error.grid(row=8,column=0,columnspan=2)
+    date_error.grid(row=9,column=0,columnspan=2)
     date_error.grid_forget()
 
     text_msg = tkinter.StringVar()
     server_error = tkinter.Label(register_frame,textvariable= text_msg, fg="red")
-    server_error.grid(row=9,column=0,columnspan=2)
+    server_error.grid(row=10,column=0,columnspan=2)
     server_error.grid_forget()
 
-    tkinter.Button(register_frame,text="send",font=15).grid(row=10,column=0,pady=(20,0))
+    tkinter.Button(register_frame,text="send",font=15,command = on_submit).grid(row=11,column=0,pady=(20,0))
 
-    tkinter.Button(register_frame,text="clear",font=15).grid(row=10,column=1,pady=(20,0))
+    tkinter.Button(register_frame,text="clear",font=15).grid(row=11,column=1,pady=(20,0))
 
-    tkinter.Label(register_frame,text="already have a user?", font=20).grid(row=11,column=0,columnspan=2,pady=(20,0))
-    tkinter.Button(register_frame,text="log in",font=15,command=login).grid(row=12,column=0,columnspan=2,pady=(20,0))
+    tkinter.Label(register_frame,text="already have a user?", font=20).grid(row=12,column=0,columnspan=2,pady=(20,0))
+    tkinter.Button(register_frame,text="log in",font=15,command=login).grid(row=13,column=0,columnspan=2,pady=(20,0))
 
     
 # def main(self):

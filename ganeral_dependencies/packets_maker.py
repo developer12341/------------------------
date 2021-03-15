@@ -14,7 +14,9 @@ class Packet_Maker:
         """
         self.e,self.N = public_key
         self.amount_info_packets = 0
+        self.amount_content_packets = 0
         self.content = content
+        self.file_path = file_path
         if request == SEND_FILE:
             #edge case - sending file without a name or a type
             if not file_path:
@@ -56,18 +58,18 @@ class Packet_Maker:
 
             self.amount_info_packets += (len(self.file_name)//CONTENT_SIZE) + 1
 
-        elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL]:
+        elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST]:
             self.amount_info_packets += 1
         
         elif request in [SEND_MSG, LOGIN, REGISTER]:
-            self.amount_info_packets += 1
-                
+            pass
+
         if self.content:
             self.content = self.encrypt(content)
+            self.amount_content_packets = (len(self.content)//CONTENT_SIZE) + 1
 
         packet_id = uuid.uuid4().bytes[:8]
 
-        self.amount_content_packets = (len(self.content)//CONTENT_SIZE) + 1
         self.amount_of_packets = self.amount_content_packets + self.amount_info_packets
 
         
@@ -104,7 +106,7 @@ class Packet_Maker:
         packet = self.header
         packet += self.packet_index.to_bytes(3,"big")
         if self.packet_index < self.amount_info_packets:
-            if self.file_name:
+            if self.file_path:
                 packet += FILE_NAME_PACKET
                 
                 if len(self.file_name) > CONTENT_SIZE:
