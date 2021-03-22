@@ -58,10 +58,10 @@ class Packet_Maker:
 
             self.amount_info_packets += (len(self.file_name)//CONTENT_SIZE) + 1
 
-        elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST]:
+        elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST,CREATE_CHAT]:
             self.amount_info_packets += 1
         
-        elif request in [SEND_MSG, LOGIN, REGISTER]:
+        elif request in [SEND_MSG, LOGIN, REGISTER, SEND_PINCODE]:
             pass
 
         if self.content:
