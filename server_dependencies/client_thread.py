@@ -2,8 +2,9 @@ import threading, struct, datetime
 from ganeral_dependencies.global_values import *
 from server_dependencies import email_send
 from ganeral_dependencies.packets_maker import Packet_Maker
+import uuid
 class request_heandler(threading.Thread):
-    def __init__(self, client,addr,client_e,client_d, client_N, db_obj, addr_name,addr_chatId,chatId_addr):
+    def __init__(self, client,addr,client_e,client_d, client_N, db_obj, cli_name,cli_chatId,chatId_cli):
         self.queue_requests = []
         self.client = client
         self.addr = addr
@@ -14,12 +15,12 @@ class request_heandler(threading.Thread):
         self.is_logged_in = False
         self.username = None
         self.current_details = []
-        #{address: username, ...}
-        self.addr_name = addr_name
-        #{address: chatId, ...}
-        self.addr_chatId = addr_chatId
-        #{chatId: [address,address...], ...}
-        self.chatId_addr = chatId_addr
+        #{client: username, ...}
+        self.cli_name = cli_name
+        #{client: chatId, ...}
+        self.cli_chatId = cli_chatId
+        #{chatId: [client,client...], ...}
+        self.chatId_cli = chatId_cli
 
         self.keep_runing = True
         threading.Thread.__init__(self)
@@ -50,17 +51,17 @@ class request_heandler(threading.Thread):
                 self.login()
             elif request == REGISTER:
                 self.register()
-            elif request == CONN_CHAT:
+            elif request == JOIN_CHAT:
                 self.connect_to_chat()
             elif request == CREATE_CHAT:
                 self.create_chat()
             elif request == GET_USERS:
                 self.get_users()
-            elif request == REPLACE_KEYS:
-                self.replace_keys()
+            # elif request == REPLACE_KEYS:
+            #     self.replace_keys()
             elif request == LEAVE_CHAT:
                 self.leave_chat()
-            elif request == AUTHENTICAT_EMAIL:
+            elif request == SEND_PINCODE:
                 self.authenticat_email()
             elif request == CLOSE_CONN:
                 self.close_conn()
@@ -84,6 +85,16 @@ class request_heandler(threading.Thread):
 
         return msg
 
+    def create_chat(self):
+        #chack if logged in
+        chat_id = uuid.uuid4().bytes[:4]
+        chat_id = chat_id.hex()
+        self.cli_chatId[self.client] = chat_id
+        self.chatId_cli[chat_id] = [self.client]
+        packets = Packet_Maker(JOIN_CHAT,self.public_key,content=chat_id)
+        self.client.send(next(packets))
+
+
     
     def brodcast_packets(self,addr):
         pass
@@ -101,6 +112,7 @@ class request_heandler(threading.Thread):
         print(password)
         if self.db_obj.password_chack(username,password):
             packets = Packet_Maker(REG_LOGIN_SUC,(self.client_e,self.client_N))
+            self.cli_name[addr] = username
         else:
             packets = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
 
@@ -123,6 +135,7 @@ class request_heandler(threading.Thread):
         if self.db_obj.does_user_exist(username,email):
             packets = Packet_Maker(USERNAME_TAKEN,(self.client_e,self.client_N))
         else:
+            print(email)
             id_chacker = email_send.send_authentication_email(email)
             print(id_chacker)
             if not id_chacker:
@@ -140,28 +153,23 @@ class request_heandler(threading.Thread):
         for packet in self.queue_requests:
             pincode += packet[HEADER_SIZE:]
         pincode = pincode.strip(b'\x00')
-        pincode = self.decrypt(pincode)
+        pincode = self.decrypt(pincode).decode("ascii")
+        print(pincode)
         if self.id_chacker != pincode:
-            packets = Packet_Maker(AUTHENTICAT_EMAIL,self.public_key)
+            packets = Packet_Maker(AUTHENTICAT_EMAIL,(self.client_e,self.client_N))
         else:
-            packets = Packet_Maker(REG_LOGIN_SUC,self.public_key)
+            packets = Packet_Maker(REG_LOGIN_SUC,(self.client_e,self.client_N))
             self.db_obj.insert_user(*self.current_details)
+            self.cli_name[addr] = username
+        self.client.send(next(packets))
 
 
 
     def connect_to_chat(self):
         #chack if logged in
-        data = bytes(0)
-        for packet in queue_requests:
-            data += self.decrypt(packet[HEADER_SIZE:])
-        username_len = data[0]
-        username = data[1:username_len].decode("ascii")
-        # self.addr_name[self.addr] = username
-
-
-    def create_chat(self):
-        #chack if logged in
         pass
+
+
 
     def get_users(self):
         #chack if logged in

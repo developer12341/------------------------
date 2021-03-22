@@ -10,8 +10,11 @@ def Create_Frame(email_validetor_frame, register_frame, chat_picker_frame,server
     def on_submit(*args):
         pincode = pincode_entry.get()
         if len(pincode) == 6:
-            packets = Packet_Maker(AUTHENTICAT_EMAIL,public_key)
-            server.send(next(packets))
+            content = pincode.encode("ascii")
+            packets = Packet_Maker(SEND_PINCODE,public_key,content=content)
+            pac = next(packets)
+            print(pac)
+            server.send(pac)
             server_response = server.recv(PACKET_SIZE)
             if pac_comp.is_logged_in(server_response):
                 chat_picker_frame.tkraise()

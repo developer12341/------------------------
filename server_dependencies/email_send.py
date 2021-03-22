@@ -5,7 +5,7 @@ def send_authentication_email(receiver_email):
         smtp_server = "smtp.gmail.com"
         sender_email = "sendme854@gmail.com"
         password = "sending123"
-        uniqe_id = random.randrange(99999,999999)
+        uniqe_id = str(random.randrange(99999,999999))
         message = """Subject: sendme authentication
 
 Welcome to sendme!
@@ -22,7 +22,6 @@ the authentication code is: {}""".format(uniqe_id)
         return uniqe_id
     except:
         return False
-
 if __name__ == "__main__":
-    uniqe_id = send_authentication_email("2021ido.d")
+    uniqe_id = send_authentication_email("idodon33@gmail.com")
     print(uniqe_id)
