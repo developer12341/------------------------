@@ -4,9 +4,10 @@ from server_dependencies import email_send
 from ganeral_dependencies.packets_maker import Packet_Maker
 import uuid
 class request_heandler(threading.Thread):
-    def __init__(self, client,addr,client_e,client_d, client_N, db_obj, cli_name,cli_chatId,chatId_cli):
+    def __init__(self, client,addr,client_e,client_d, client_N,notification_Server, db_obj,chatId_cli,clientid_client):
         self.queue_requests = []
         self.client = client
+        self.notification_server = notification_Server
         self.addr = addr
         self.client_d = client_d
         self.client_e = client_e
@@ -15,11 +16,9 @@ class request_heandler(threading.Thread):
         self.is_logged_in = False
         self.username = None
         self.current_details = []
-        #{client: username, ...}
-        self.cli_name = cli_name
-        #{client: chatId, ...}
-        self.cli_chatId = cli_chatId
-        #{chatId: [client,client...], ...}
+        #{client_id: notification_client_obj}
+        self.clientid_client  = clientid_client
+        #{chatId: [client_id,client_id...], ...}
         self.chatId_cli = chatId_cli
 
         self.keep_runing = True
@@ -53,8 +52,10 @@ class request_heandler(threading.Thread):
                 self.register()
             elif request == JOIN_CHAT:
                 self.connect_to_chat()
-            elif request == CREATE_CHAT:
-                self.create_chat()
+            # elif request == CREATE_CHAT:
+            #     self.create_chat()
+            elif request == SEND_FRIEND_REQ:
+                self.send_friend_req()
             elif request == GET_USERS:
                 self.get_users()
             # elif request == REPLACE_KEYS:
@@ -63,6 +64,8 @@ class request_heandler(threading.Thread):
                 self.leave_chat()
             elif request == SEND_PINCODE:
                 self.authenticat_email()
+            elif request == NOTIFICATION_SETUP:
+                self.notification_setup()
             elif request == CLOSE_CONN:
                 self.close_conn()
                 return
@@ -84,7 +87,11 @@ class request_heandler(threading.Thread):
         msg = bytes(msg)
 
         return msg
-
+    def notification_setup(self):
+        client_notification, addr = self.notification_server.accept()
+        
+    def send_friend_req(self):
+        pass
     def create_chat(self):
         #chack if logged in
         chat_id = uuid.uuid4().bytes[:4]
@@ -110,9 +117,10 @@ class request_heandler(threading.Thread):
         password = password.strip(b'\x00').decode("ascii")
         print(username)
         print(password)
-        if self.db_obj.password_chack(username,password):
+        client_id = self.db_obj.password_chack(username,password)
+        if client_id:
             packets = Packet_Maker(REG_LOGIN_SUC,(self.client_e,self.client_N))
-            self.cli_name[addr] = username
+            self.clientid_client[]
         else:
             packets = Packet_Maker(REG_LOGIN_FAIL,(self.client_e,self.client_N))
 

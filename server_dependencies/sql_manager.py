@@ -84,12 +84,14 @@ class User_Db:
 
     def password_chack(self, username, password):
         conn = sqlite3.connect(f'{self.__db_name}.db')
-        select_query = "SELECT * FROM users WHERE username = ? AND password = ?"
+        select_query = "SELECT userid FROM users WHERE username = ? AND password = ?"
         c = conn.execute(select_query,(username,password))
         result = c.fetchone()
         conn.close()
         time.sleep(1)
-        return not not (result)
+        if result:
+            return result[0]
+        return None
 
     def is_user_logged_in(self,username):
         conn = sqlite3.connect(f'{self.__db_name}.db')
@@ -108,7 +110,18 @@ class User_Db:
         result = c.fetchone()
         conn.close()
         return result
-    
+        
+    def get_user_id(self,username):
+        conn = sqlite3.connect(f'{self.__db_name}.db')
+        select_query = "SELECT userid FROM users WHERE username = ?;"
+        c = conn.execute(select_query,(username,password))
+        result = c.fetchone()
+        conn.close()
+        time.sleep(1)
+        if result:
+            return result[0]
+        return None
+
     def select_all_users(self):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = f"SELECT * from users"
@@ -120,9 +133,5 @@ class User_Db:
 
 if __name__ == "__main__":
     u = User_Db("userdata")
-    d = datetime.date(2020,10,10)
-    # u.insert_user("a","sss",str(d),"dasdasdasd")
-    # u.insert_user("ssadasd","fgdfg",str(d),"werwerweq")
-    # u.insert_user("aaa","ssss",str(d),"Assaada")
-    # print(u.password_chack("asdas","hello"))
-    print(u.is_user_logged_in("aaa"))
+    user_id = u.password_chack("idodon","iklsd;fk;lmdon")
+    print(user_id)
