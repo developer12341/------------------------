@@ -1,6 +1,9 @@
 import tkinter as tk
 from client_dependencies import start_window,register,login,email_validetor,chat_picker
 
+class user_values:
+    username = ""
+
 def main(server,keys):
 
     def close():
@@ -25,10 +28,10 @@ def main(server,keys):
         frame.grid(row=0, column=0, sticky='news')
 
     start_window.Create_Frame(start_frame,register_frame,login_frame)
-    register.Create_Frame(register_frame,login_frame,email_validetor_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
-    login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
+    register.Create_Frame(register_frame,login_frame,email_validetor_frame,server,(keys[0],keys[2]),(keys[1],keys[2]),user_values)
+    login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]),user_values)
     email_validetor.Create_Frame(email_validetor_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
-    chat_picker.create_frame(chat_picker_frame,chat_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
+    chat_picker.create_frame(chat_picker_frame,user_values,chat_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
     
     register_frame.tkraise()
     root.mainloop() 

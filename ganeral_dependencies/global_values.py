@@ -1,3 +1,6 @@
+IP, NOTIFICATION_PORT, PORT = "127.0.0.1", 9999, 12345
+
+
 
 #setting some constents
 LOGIN = b'\x01'
@@ -6,7 +9,7 @@ SEND_MSG = b'\x03'
 SEND_FILE = b'\x04'
 SEND_IMG = b'\x05'
 SERVER_KEYS = b'\x06'
-CREATE_CHAT = b'\x07'
+SEND_FRIEND_REQ = b'\x07'
 JOIN_CHAT = b'\x08'
 GET_USERS = b'\x09'
 CLOSE_CONN = b'\x0a'
@@ -20,6 +23,12 @@ USERNAME_TAKEN = b'\x11'
 EMAIL_TAKEN = b'\x12'
 EMAIL_DOSENT_EXIST = b'\x13'
 SEND_PINCODE = b'\x14'
+CLIENT_KEYS = b'\x15'
+USERNAME_DOESNT_EXIST = b'\x16'
+ACCEPT_FRIEND_REQ = b'\x17'
+NOTIFICATION_SETUP = b'\x18'
+
+
 
 #flags - to chack packet validitys and to let the reciver know for sure what this packet is
 CONTENT_PACKET = b'\x01'

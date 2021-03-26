@@ -1,7 +1,7 @@
 import tkinter,threading
 from ganeral_dependencies import packets_maker,pac_comp
 from ganeral_dependencies.global_values import LOGIN,PASSWORD_MAX_LEN,USERNAME_MAX_LEN, PACKET_SIZE
-def Create_Frame(login_frame, register_frame, chat_picker_frame,server,public_key,private_key):
+def Create_Frame(login_frame, register_frame, chat_picker_frame,server,public_key,private_key,user_values):
 
     def regiater():
         register_frame.tkraise()
@@ -22,6 +22,7 @@ def Create_Frame(login_frame, register_frame, chat_picker_frame,server,public_ke
             
             server_response = server.recv(PACKET_SIZE)
             if pac_comp.is_logged_in(server_response):
+                user_values.username = username
                 chat_picker_frame.tkraise()
             else:
                 print("error msg")

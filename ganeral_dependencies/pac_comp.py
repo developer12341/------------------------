@@ -70,3 +70,18 @@ def can_auth_email(packet):
     else:
         #packet validity
         raise Exception("this packet isn't REG_LOGIN type, please chack the server side for bugs")
+
+def does_user_exist(packet):
+    request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+    
+    #packet validity
+    if packet_number >= packet_amount:
+        raise Exception("this packets are invalid")
+
+    if request == USERNAME_DOESNT_EXIST:
+        return False
+    elif request == CLIENT_KEYS:
+        return True
+    else:
+        raise Exception("this packet is not a valid type, please chack the server side for bugs")
+

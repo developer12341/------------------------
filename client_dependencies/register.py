@@ -1,7 +1,7 @@
 import tkinter,threading,datetime, tkcalendar
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies import pac_comp,packets_maker
-def Create_Frame(register_frame,login_frame,email_validetor_frame,server,public_key,private_key):
+def Create_Frame(register_frame,login_frame,email_validetor_frame,server,public_key,private_key,user_values):
     
     def login():
         login_frame.tkraise()
@@ -27,6 +27,7 @@ def Create_Frame(register_frame,login_frame,email_validetor_frame,server,public_
         print(server_response)
         can_auth, reasone =  pac_comp.can_auth_email(server_response)
         if can_auth:
+            user_values.username = username
             email_validetor_frame.tkraise()
         else:
             print("error msg")
