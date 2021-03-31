@@ -24,4 +24,4 @@ the authentication code is: {}""".format(uniqe_id)
         return False
 if __name__ == "__main__":
     uniqe_id = send_authentication_email("idodon33@gmail.com")
-    print(uniqe_id)
+    #print(uniqe_id)

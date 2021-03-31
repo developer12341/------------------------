@@ -1,5 +1,5 @@
 import socket,threading
-from ganeral_dependencies import packets_maker
+from ganeral_dependencies import protocols
 from ganeral_dependencies.global_values import *
 
 def main():

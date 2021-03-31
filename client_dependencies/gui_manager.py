@@ -1,11 +1,15 @@
 import tkinter as tk
-from client_dependencies import start_window,register,login,email_validetor,chat_picker
+from client_dependencies import start_window,register,login,email_validetor,chat_picker,chat
 
 class user_values:
     username = ""
+    pincode = 0
+    group_key = None
+    my_key = None
 
-def main(server,keys):
 
+def main(server,key):
+    user_values.my_key = key
     def close():
         root.destroy()
 
@@ -28,10 +32,11 @@ def main(server,keys):
         frame.grid(row=0, column=0, sticky='news')
 
     start_window.Create_Frame(start_frame,register_frame,login_frame)
-    register.Create_Frame(register_frame,login_frame,email_validetor_frame,server,(keys[0],keys[2]),(keys[1],keys[2]),user_values)
-    login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]),user_values)
-    email_validetor.Create_Frame(email_validetor_frame,register_frame,chat_picker_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
-    chat_picker.create_frame(chat_picker_frame,user_values,chat_frame,server,(keys[0],keys[2]),(keys[1],keys[2]))
-    
-    register_frame.tkraise()
-    root.mainloop() 
+    register.Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,user_values)
+    login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,key,user_values)
+    email_validetor.Create_Frame(email_validetor_frame,register_frame,chat_picker_frame,server,key)
+    chat_picker.create_frame(chat_picker_frame,chat_frame,user_values,server,key)
+    chat.create_frame(root,chat_frame,chat_picker_frame,user_values,server,key)
+
+    login_frame.tkraise()
+    root.mainloop()

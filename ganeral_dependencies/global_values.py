@@ -16,7 +16,7 @@ CLOSE_CONN = b'\x0a'
 LEAVE_CHAT = b'\x0b'
 REG_LOGIN_SUC = b'\x0c'
 REG_LOGIN_FAIL = b'\x0d'
-GET_GROUP_KEYS = b'\x0e'
+GET_GROUP_KEY = b'\x0e'
 FORGOT_MY_PASSWORD = b'\x0f'
 AUTHENTICAT_EMAIL = b'\x10'
 USERNAME_TAKEN = b'\x11'
@@ -27,9 +27,9 @@ CLIENT_KEYS = b'\x15'
 USERNAME_DOESNT_EXIST = b'\x16'
 ACCEPT_FRIEND_REQ = b'\x17'
 NOTIFICATION_SETUP = b'\x18'
-
-
-
+CREATE_CHAT = b'\x19'
+CANT_JOIN_CHAT = b'\x1a'
+END_SETTION = b'\x1b'
 #flags - to chack packet validitys and to let the reciver know for sure what this packet is
 CONTENT_PACKET = b'\x01'
 FILE_NAME_PACKET = b'\x02'

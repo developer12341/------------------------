@@ -1,6 +1,9 @@
-import uuid, math, time
+import uuid, math, time, hashlib, json
 from ganeral_dependencies.global_values import *
-# import RSA_crypt
+from ganeral_dependencies import AES_crypto
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from base64 import b64encode, b64decode
 import ntpath
 def extract_file_name(path):
     head, tail = ntpath.split(path)
@@ -8,11 +11,11 @@ def extract_file_name(path):
 
 class Packet_Maker:
 
-    def __init__(self, request, public_key, content = None, file_path = None):
+    def __init__(self, request, shared_secrete = b'', content = None, file_path = None):
         """
             prepering the packets for constraction and the header
         """
-        self.e,self.N = public_key
+        self.key = shared_secrete
         self.amount_info_packets = 0
         self.amount_content_packets = 0
         self.content = content
@@ -24,12 +27,12 @@ class Packet_Maker:
             
 
             #encrypt the file name and file itself
-            self.file_name = self.encrypt(extract_file_name(file_path))
+            self.e_file_name = self.encrypt(extract_file_name(file_path))
             with open(file_path,"rb") as f:
                 self.content = f.read()
             # self.content = self.encrypt(content)
 
-            self.amount_info_packets += (len(self.file_name)//CONTENT_SIZE) + 1
+            self.amount_info_packets += (len(self.e_file_name)//CONTENT_SIZE) + 1
 
 
         elif request == SEND_IMG:
@@ -54,16 +57,16 @@ class Packet_Maker:
             #encrypt the content of the image and the file name
             self.content = buffer.getvalue()
             # self.content = self.encrypt(self.content)
-            self.file_name = self.encrypt(file_name.encode("Ascii"))
+            self.e_file_name = self.encrypt(file_name.encode("Ascii"))
 
-            self.amount_info_packets += (len(self.file_name)//CONTENT_SIZE) + 1
+            self.amount_info_packets += (len(self.e_file_name)//CONTENT_SIZE) + 1
 
         elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST,CREATE_CHAT]:
             self.amount_info_packets += 1
         
         elif request in [SEND_MSG, LOGIN, REGISTER, SEND_PINCODE]:
             pass
-
+        
         if self.content:
             self.content = self.encrypt(content)
             self.amount_content_packets = (len(self.content)//CONTENT_SIZE) + 1
@@ -84,14 +87,23 @@ class Packet_Maker:
         self.header = request + packet_id 
         self.header += self.amount_of_packets.to_bytes(3,"big")
 
-    def encrypt(self,msg):
-        """
-            encrypt every massege with the following formula
-            (msg)^e % N = c 
-        """
-        cipher = map(lambda num: pow(num, self.e, self.N).__str__(), msg)
-        cipher = ' '.join(cipher).encode("ascii")
-        return cipher
+    def int_to_bytes(self, x: int) -> bytes:
+        return x.to_bytes((x.bit_length() + 7) // 8, 'big')
+
+    def encrypt(self, data):
+        if self.key:
+            header = get_random_bytes(8)
+            nonce = get_random_bytes(16)
+            # print(self.key)
+            cipher = AES.new(self.key, AES.MODE_SIV, nonce=nonce)
+            cipher.update(header)
+            ciphertext, tag = cipher.encrypt_and_digest(data)
+
+            json_k = [ 'nonce', 'header', 'ciphertext', 'tag' ]
+            json_v = [ b64encode(x).decode('utf-8') for x in (nonce, header, ciphertext, tag) ]
+            return json.dumps(dict(zip(json_k, json_v))).encode("utf-8")
+        else:
+            return data
 
     def __iter__(self):
         return self
@@ -109,10 +121,10 @@ class Packet_Maker:
             if self.file_path:
                 packet += FILE_NAME_PACKET
                 
-                if len(self.file_name) > CONTENT_SIZE:
-                    packet += self.file_name[self.packet_index*CONTENT_SIZE:(self.packet_index + 1)*CONTENT_SIZE]
+                if len(self.e_file_name) > CONTENT_SIZE:
+                    packet += self.e_file_name[self.packet_index*CONTENT_SIZE:(self.packet_index + 1)*CONTENT_SIZE]
                 else:
-                    packet += self.file_name[self.packet_index*CONTENT_SIZE:]
+                    packet += self.e_file_name[self.packet_index*CONTENT_SIZE:]
             else:
                 packet += SOMETHING_ELSE
         else:

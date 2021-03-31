@@ -134,4 +134,4 @@ class User_Db:
 if __name__ == "__main__":
     u = User_Db("userdata")
     user_id = u.password_chack("idodon","iklsd;fk;lmdon")
-    print(user_id)
+    #print(user_id)

@@ -1,7 +1,7 @@
 import tkinter,threading
-from ganeral_dependencies import packets_maker,pac_comp
+from ganeral_dependencies import protocols,pac_comp
 from ganeral_dependencies.global_values import LOGIN,PASSWORD_MAX_LEN,USERNAME_MAX_LEN, PACKET_SIZE
-def Create_Frame(login_frame, register_frame, chat_picker_frame,server,public_key,private_key,user_values):
+def Create_Frame(login_frame, register_frame, chat_picker_frame,server,key,user_values):
 
     def regiater():
         register_frame.tkraise()
@@ -15,9 +15,9 @@ def Create_Frame(login_frame, register_frame, chat_picker_frame,server,public_ke
 
             content = username.encode("ascii") + bytes(USERNAME_MAX_LEN-len(username))
             content += password.encode("ascii") + bytes(PASSWORD_MAX_LEN-len(password))
-            packets = packets_maker.Packet_Maker(LOGIN,public_key,content=content)
+            packets = protocols.Packet_Maker(LOGIN,shared_secrete=key,content=content)
             for packet in packets:
-                print(packet)
+                #print(packet)
                 server.send(packet)
             
             server_response = server.recv(PACKET_SIZE)
