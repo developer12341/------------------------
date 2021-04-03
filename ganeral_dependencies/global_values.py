@@ -1,8 +1,6 @@
 IP, NOTIFICATION_PORT, PORT = "127.0.0.1", 9999, 12345
 
-
-
-#setting some constents
+# setting some contents
 LOGIN = b'\x01'
 REGISTER = b'\x02'
 SEND_MSG = b'\x03'
@@ -18,36 +16,32 @@ REG_LOGIN_SUC = b'\x0c'
 REG_LOGIN_FAIL = b'\x0d'
 GET_GROUP_KEY = b'\x0e'
 FORGOT_MY_PASSWORD = b'\x0f'
-AUTHENTICAT_EMAIL = b'\x10'
+AUTHENTICATE_EMAIL = b'\x10'
 USERNAME_TAKEN = b'\x11'
 EMAIL_TAKEN = b'\x12'
-EMAIL_DOSENT_EXIST = b'\x13'
-SEND_PINCODE = b'\x14'
+EMAIL_DOESNT_EXIST = b'\x13'
+SEND_PIN_CODE = b'\x14'
 CLIENT_KEYS = b'\x15'
 USERNAME_DOESNT_EXIST = b'\x16'
 # ACCEPT_FRIEND_REQ = b'\x17'
 # NOTIFICATION_SETUP = b'\x18'
 CREATE_CHAT = b'\x19'
 CANT_JOIN_CHAT = b'\x1a'
-END_SETTION = b'\x1b'
+END_SESSION = b'\x1b'
 SEND_GROUP_KEYS = b'\x1c'
 # SEND_FIRST_KEY = b'\x1d'
 USER_LOGGED_IN = b'\x1e'
 
-
-#flags - to chack packet validitys and to let the reciver know for sure what this packet is
+# flags - to check packet validity and to let the receiver know for sure what this packet is
 CONTENT_PACKET = b'\x01'
 FILE_NAME_PACKET = b'\x02'
 USERNAME_PACKET = b'\x03'
 SOMETHING_ELSE = b'\x04'
 
-
-
-HEADER_SIZE = 16 # bytes
-PACKET_SIZE = 1024  #bytes
+HEADER_SIZE = 16  # bytes
+PACKET_SIZE = 1024  # bytes
 CONTENT_SIZE = PACKET_SIZE - HEADER_SIZE
-IMG_SIZE_FAC = 0.5 # 0 < IMG_SIZE_FAC < 1
-
+IMG_SIZE_FAC = 0.5  # 0 < IMG_SIZE_FAC < 1
 
 PASSWORD_MIN_LEN = 5
 PASSWORD_MAX_LEN = 100

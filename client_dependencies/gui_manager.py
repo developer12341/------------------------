@@ -1,46 +1,48 @@
 import tkinter as tk
-from client_dependencies import start_window,register,login,email_validetor,chat_picker,chat
+from client_dependencies import start_window, register, login, email_validetor, chat_picker, chat
 import time
-class user_values:
+
+
+class UserValues:
     username = ""
-    pincode = 0
+    pin_code = 0
     group_key = None
     rsa_group_key = None
     my_key = None
 
 
-def main(server,key):
-    user_values.my_key = key
+def main(server, key):
+    UserValues.my_key = key
 
     def close():
-        user_values.pincode = 0
+        UserValues.pin_code = 0
         time.sleep(0.3)
         root.destroy()
 
     root = tk.Tk()
-    root.minsize(500,500)
-    root.maxsize(1500,1500)
+    root.minsize(500, 500)
+    root.maxsize(1500, 1500)
     root.title("sendme")
-    root.columnconfigure(0,weight=1)
-    root.rowconfigure(0,weight=1)
-    root.protocol("WM_DELETE_WINDOW",close)
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    root.protocol("WM_DELETE_WINDOW", close)
 
     start_frame = tk.Frame(root)
     login_frame = tk.Frame(root)
     register_frame = tk.Frame(root)
-    email_validetor_frame = tk.Frame(root)
+    email_validator_frame = tk.Frame(root)
     chat_picker_frame = tk.Frame(root)
-    chat_frame= tk.Frame(root)
+    chat_frame = tk.Frame(root)
 
-    for frame in (start_frame, login_frame, register_frame, chat_picker_frame, chat_frame,email_validetor_frame):
+    for frame in (start_frame, login_frame, register_frame, chat_picker_frame, chat_frame, email_validator_frame):
         frame.grid(row=0, column=0, sticky='news')
-    start_window.Create_Frame(start_frame,register_frame,login_frame)
+    start_window.create_frame(start_frame, register_frame, login_frame)
 
-    register.Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,user_values)
-    login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,key,user_values)
-    email_validetor.Create_Frame(email_validetor_frame,register_frame,user_values,chat_picker_frame,server,key)
-    chat_picker.create_frame(chat_picker_frame,chat_frame,user_values,server,key)
-    chat.create_frame(root,chat_frame,chat_picker_frame,user_values,server,key)
+    register.create_frame(register_frame, login_frame, email_validator_frame, server, key, UserValues)
+    login.create_frame(login_frame, register_frame, chat_picker_frame, server, key, UserValues)
+    email_validetor.create_frame(email_validator_frame, register_frame, UserValues, chat_picker_frame, server, key)
+    chat_picker.create_frame(chat_picker_frame, chat_frame, UserValues, server, key)
+    chat.create_frame(root, chat_frame, chat_picker_frame, UserValues, server, key)
 
     register_frame.tkraise()
     root.mainloop()

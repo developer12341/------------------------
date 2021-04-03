@@ -1,23 +1,23 @@
 import sqlite3
-import datetime,time
+import time
 
-class User_Db:
+
+class UsersDatabase:
     """Creates database with users table includes:
        create query
        insert query
        select query
     """
 
-    def __init__(self, db_name = "data_base"):
+    def __init__(self, db_name="data_base"):
         conn = sqlite3.connect(f'{db_name}.db')
-        query_str =  "CREATE TABLE IF NOT EXISTS users ("
+        query_str = "CREATE TABLE IF NOT EXISTS users ("
         query_str += "userid INTEGER PRIMARY KEY AUTOINCREMENT ,"
         query_str += "username TEXT NOT NULL ,"
         query_str += "password TEXT NOT NULL ,"
         query_str += "birthday datetime NOT NULL,"
         query_str += "email TEXT NOT NULL, "
         query_str += "is_logged_in BOOLEAN);"
-        
 
         conn.execute(query_str)
         conn.commit()
@@ -29,25 +29,26 @@ class User_Db:
 
     def insert_user(self, username, password, birthday, email):
         conn = sqlite3.connect(f'{self.__db_name}.db')
-        insert_query = "INSERT INTO users (username, password, birthday, email, is_logged_in) VALUES ( ?, ?, ?, ?, TRUE);"
-        conn.execute(insert_query,(username,password,birthday,email,))
+        insert_query = "INSERT INTO users (username, password, birthday, email, is_logged_in) VALUES ( ?, ?, ?, ?, " \
+                       "TRUE); "
+        conn.execute(insert_query, (username, password, birthday, email,))
         conn.commit()
         conn.close()
 
-    def del_user(self, userId):
+    def del_user(self, user_database_id):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         delete_query = "DELETE FROM users WHERE userid = ?;"
-        conn.execute(delete_query, (userId,))
+        conn.execute(delete_query, (user_database_id,))
         conn.commit()
         conn.close()
 
-    def change_user(self, userId, username = None, password = None, birthday = None ,email = None):
+    def change_user(self, user_database_id, username=None, password=None, birthday=None, email=None):
 
         if not (username and password and birthday and email):
             return
-        
+
         conn = sqlite3.connect(f'{self.__db_name}.db')
-        
+
         # change_query = 'UPDATE users SET username = ?, password = ? WHERE userid = ?;'
         values = []
         change_query = "UPDATE users SET "
@@ -67,33 +68,33 @@ class User_Db:
         if email:
             change_list.append(" email = ? ")
             values.append(email)
-        values.append(userId)
+        values.append(user_database_id)
         change_query += ",".join(change_list)
         change_query += " WHERE userid = ?;"
-        conn.execute(change_query,tuple(values))
+        conn.execute(change_query, tuple(values))
         conn.commit()
         conn.close()
 
-    def does_user_exist(self,username):
+    def does_user_exist(self, username):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT * from users where username = ?"
-        c = conn.execute(select_query,(username,))
+        c = conn.execute(select_query, (username,))
         result = c.fetchone()
         conn.close()
-        return not not (result)
+        return not not result
 
-    def does_email_exist(self,email):
+    def does_email_exist(self, email):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT * from users where email = ?"
-        c = conn.execute(select_query,(email,))
+        c = conn.execute(select_query, (email,))
         result = c.fetchone()
         conn.close()
-        return not not (result)
-        
-    def password_chack(self, username, password):
+        return not not result
+
+    def password_check(self, username, password):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT userid FROM users WHERE username = ? AND password = ?"
-        c = conn.execute(select_query,(username,password))
+        c = conn.execute(select_query, (username, password))
         result = c.fetchone()
         conn.close()
         time.sleep(1)
@@ -101,28 +102,28 @@ class User_Db:
             return result[0]
         return None
 
-    def is_user_logged_in(self,username):
+    def is_user_logged_in(self, username):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT is_logged_in FROM users WHERE username = ?;"
-        c = conn.execute(select_query,(username,))
+        c = conn.execute(select_query, (username,))
         result = c.fetchone()
         conn.close()
         if result:
             return not not (result[0])
         return False
 
-    def select_user_by_id(self, userId):
+    def select_user_by_id(self, user_database_id):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT username, password from users where userid = ?"
-        c = conn.execute(select_query,(userId,))
+        c = conn.execute(select_query, (user_database_id,))
         result = c.fetchone()
         conn.close()
         return result
-        
-    def get_user_id(self,username):
+
+    def get_user_id(self, username):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT userid FROM users WHERE username = ?;"
-        c = conn.execute(select_query,(username,password))
+        c = conn.execute(select_query, (username,))
         result = c.fetchone()
         conn.close()
         time.sleep(1)
@@ -140,6 +141,6 @@ class User_Db:
 
 
 if __name__ == "__main__":
-    u = User_Db("userdata")
-    user_id = u.password_chack("idodon","iklsd;fk;lmdon")
-    #print(user_id)
+    u = UsersDatabase("userdata")
+    user_id = u.password_check("idodon", "")
+    # print(user_id)
