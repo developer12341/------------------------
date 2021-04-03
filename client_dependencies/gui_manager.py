@@ -1,16 +1,19 @@
 import tkinter as tk
 from client_dependencies import start_window,register,login,email_validetor,chat_picker,chat
-
+import time
 class user_values:
     username = ""
     pincode = 0
     group_key = None
+    rsa_group_key = None
     my_key = None
 
 
 def main(server,key):
     user_values.my_key = key
     def close():
+        user_values.pincode = 0
+        time.sleep(0.3)
         root.destroy()
 
     root = tk.Tk()

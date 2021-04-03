@@ -16,6 +16,7 @@ class request_heandler(threading.Thread):
         self.db_obj = db_obj
         self.is_logged_in = False
         self.username = None
+
         self.current_details = []
         #{client: chat_id}
         self.client_chatid  = client_chatid
@@ -34,13 +35,18 @@ class request_heandler(threading.Thread):
 
 
     def decrypt(self,json_input):
-        b64 = json.loads(json_input)
-        json_k = [ 'nonce', 'header', 'ciphertext', 'tag' ]
-        jv = {k:b64decode(b64[k]) for k in json_k}
-        cipher = AES.new(self.key, AES.MODE_SIV, nonce=jv['nonce'])
-        cipher.update(jv['header'])
-        plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
-        return plaintext
+        
+        if json_input:
+            json_input = json_input.strip(b'\x00')
+            b64 = json.loads(json_input)
+            json_k = [ 'nonce', 'header', 'ciphertext', 'tag' ]
+            jv = {k:b64decode(b64[k]) for k in json_k}
+            cipher = AES.new(self.key, AES.MODE_SIV, nonce=jv['nonce'])
+            cipher.update(jv['header'])
+            plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
+            return plaintext
+        else:
+            return plaintext
 
     def run(self):
         while self.keep_runing:
@@ -84,6 +90,10 @@ class request_heandler(threading.Thread):
                 self.authenticat_email()
             elif request == NOTIFICATION_SETUP:
                 self.notification_setup()
+            elif request == SEND_GROUP_KEYS:
+                self.send_group_keys()
+            elif request == SEND_FIRST_KEY:
+                self.send_first_key()
             elif request == CLOSE_CONN:
                 self.close_conn()
                 return
@@ -91,60 +101,83 @@ class request_heandler(threading.Thread):
             self.queue_requests = []
         self.client.close()
         
+    def send_first_key(self):
+        public_key = b''
+        for packet in self.queue_requests:
+            public_key += packet[HEADER_SIZE:]
+        self.chatid_pubkey[self.chat_id][self.client] = public_key
+
+
+
+    def send_group_keys(self):
+        for packet in self.queue_requests:
+            print("user get packets: " + str(packet))
+            self.chatId_cli[self.chat_id][-1].send(packet)
         
-    
+
     def notification_setup(self):
         client_notification, addr = self.notification_server.accept()
         
     def send_friend_req(self):
         pass
+
     def get_group_key(self):
         cli_group_pub_key = b''
         for packet in self.queue_requests:
             cli_group_pub_key += packet[HEADER_SIZE:]
         key_index, cli_group_pub_key = self.decrypt(cli_group_pub_key).split(b'index_code_end')
         key_index = pin_code.decode("utf-8")
-        for clients, key in self.chatid_pubkey[self.chat_id].items():
-            if clients[0] == key_index:
-                self.chatid_pubkey[clients] = cli_group_pub_key
+        for key_index_value, key in self.chatid_pubkey[self.chat_id].items():
+            if key_index_value == key_index:
+                self.chatid_pubkey[key_index_value] = cli_group_pub_key
                 break
 
     def create_chat(self):
         chat_id = uuid.uuid4().bytes[:3]
         chat_id = chat_id.hex()
+        chat_id = chat_id.encode("utf-8")
         print(chat_id)
         self.chatId_cli[chat_id] = [self.client]
         self.client_chatid[self.client] = chat_id
-        self.chatid = chat_id
-        packets = Packet_Maker(JOIN_CHAT,self.key,content=chat_id.encode("ascii"))
+        self.chat_id = chat_id
+        packets = Packet_Maker(JOIN_CHAT,self.key,content=chat_id)
         for packet in packets:
-            print(packet)
             self.client.send(packet)
         
 
     def join_chat(self):
         #chack if logged in
-        cli_group_pub_key = b''
+        cli_public_key = b''
         for packet in self.queue_requests:
-            cli_group_pub_key += packet[HEADER_SIZE:]
-        pin_code, cli_group_pub_key = self.decrypt(cli_group_pub_key).split(b'pin_code_end')
-        pin_code = pin_code.decode("utf-8")
+            cli_public_key += packet[HEADER_SIZE:]
+        pin_code, cli_public_key = self.decrypt(cli_public_key.strip(b'\x00')).split(b'pin_code_end')
         if pin_code in self.chatId_cli:
             #key_exchange
-            packet = Packet_Maker(JOIN_CHAT)
-            self.chatid_pubkey[pin_code][self.client] = cli_group_pub_key
-            self.chat_id = pin_code
-            packets = Packet_Maker(GET_GROUP_KEY)
-            for client in self.chatId_cli[pin_code]:
-                client.send(next(packets))
+            packets = Packet_Maker(GET_GROUP_KEY,content=cli_public_key)
             self.chatId_cli[pin_code].append(self.client)
-            time.sleep(0.4)
-            key_thread = key_distrebution.key_distribution(self.chatId_cli[self.chat_id],self.chatid_pubkey,self.chat_id)
-            key_thread.start()
+            for packet in packets:
+                print("host get packets: " + str(packet))
+                self.chatId_cli[pin_code][0].send(packet)
+            self.chat_id = pin_code
+            # packet = Packet_Maker(JOIN_CHAT,content=)
+            # self.client.send(next(packet))
+            # self.chatid_pubkey[pin_code] = {}
+            # self.chatid_pubkey[pin_code][self.client] = cli_group_pub_key
+            # self.chat_id = pin_code
+            # packet = Packet_Maker(SEND_FIRST_KEY).__next__()
+            # for client in self.chatId_cli[pin_code]:
+            #     client.send(packet)
+            # self.chatId_cli[pin_code].append(self.client)
+            # time.sleep(2)
+            # key_thread = key_distrebution.key_distribution(self.chatId_cli[self.chat_id],self.chatid_pubkey,self.chat_id)
+            # key_thread.start()
+        else:
+            packet = Packet_Maker(CANT_JOIN_CHAT)
+            self.client.send(next(packet))
             
                     
     def brodcast_packets(self):
-        for client in self.chatId_cli[self.chatid]:
+        for client in self.chatId_cli[self.chat_id]:
             if client is not self.client:
                 for packet in self.queue_requests:
                     client.send(packet)
@@ -174,6 +207,7 @@ class request_heandler(threading.Thread):
         register_details = b''
         for packet in self.queue_requests:
             register_details += packet[HEADER_SIZE:]
+        
         register_details = self.decrypt(register_details)
         username, password, Byear, Bmonth, Bday = struct.unpack("30s 100s 2s 1s 1s",register_details[:134])
         birthday= datetime.date(int.from_bytes(Byear,"big"), Bmonth[0], Bday[0])
@@ -209,7 +243,6 @@ class request_heandler(threading.Thread):
         else:
             packets = Packet_Maker(REG_LOGIN_SUC,self.key)
             self.db_obj.insert_user(*self.current_details)
-            self.cli_name[addr] = username
         self.client.send(next(packets))
 
 

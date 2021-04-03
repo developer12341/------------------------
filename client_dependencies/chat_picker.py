@@ -1,47 +1,64 @@
 import socket, tkinter, threading
 from tkinter import ttk
 from ganeral_dependencies import protocols, AES_crypto
+from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 from ganeral_dependencies import pac_comp
 import pyDH
 from ganeral_dependencies.global_values import *
 from tkinter import messagebox
+from ganeral_dependencies.pac_comp import get_server_response
 def create_frame(chat_picker_frame,chat_frame,user_values,server,key):
     
     def join_chat(*args):
         pincode = pin_entry.get()
-        parameters = pyDH.DiffieHellman()
-        content = pincode.encode("utf-8") + b"pin_code_end" + pac_comp.int_to_bytes(parameters.gen_public_key())
-        packets = protocols.Packet_Maker(JOIN_CHAT,key,content=content)
-        server.send(next(packets))
-        server_response = server.recv(PACKET_SIZE)
-        if pac_comp.can_enter_chat(server_response):
-            messagebox.showinfo("joining chat", "please wait while we encrypt your comunication line")
+        if not pincode:
+            return
+        rsa_key = RSA.generate(2048)
+        content = pincode.encode("utf-8") + b"pin_code_end" + rsa_key.public_key().export_key("PEM")
+        packets = protocols.Packet_Maker(JOIN_CHAT,shared_secrete=key, content=content)
+        for packet in packets:
+            # print(packet)
+            server.send(packet)
+            
+        request, server_response = get_server_response(server)
+        if request == SEND_GROUP_KEYS:
+            # messagebox.showinfo("joining chat", "please wait while we encrypt your comunication line")
             user_values.pincode = pincode
-            key_index, group_key = pac_comp.extract_group_key(server)
-            shared_key = pac_comp.int_to_bytes(parameters.gen_shared_key(group_key))
-            content = key_index + shared_key
-            packets = protocols.Packet_Maker(GET_GROUP_KEY,content=content)
-            for packet in packets:
-                server.send(packet)
-            user_values.group_key =  pac_comp.get_shared_secret(server,shared_key,parameters)
+            print("full msg: " + str(server_response))
+            group_private_key, group_dh_key = server_response.strip(b'\x00').split(b"end_private_key")
+            user_values.rsa_group_key = AES_crypto.rsa_decrypt(group_private_key,rsa_key)
+            group_private_key = RSA.import_key(user_values.rsa_group_key)
+            group_dh_key = pow(pac_comp.bytes_to_int(group_dh_key),group_private_key.d,group_private_key.n)
+            user_values.group_key = pac_comp.int_to_bytes(group_dh_key)
+            print(user_values.group_key)
+            # key_index, group_key = pac_comp.extract_group_key(server)
+            # shared_key = pac_comp.int_to_bytes(parameters.gen_shared_key(group_key))
+            # content = key_index + shared_key
+            # packets = protocols.Packet_Maker(GET_GROUP_KEY,content=content)
+            # for packet in packets:
+            #     server.send(packet)
+            # user_values.group_key =  pac_comp.get_shared_secret()
             
             chat_frame.tkraise()
+            user_values.on_chat_raise()
         else:
             print("error")
 
     def open_new_chat():
-        parameters = pyDH.DiffieHellman()
-        group_pub_key = pac_comp.int_to_bytes(parameters.gen_public_key())
-        packets = protocols.Packet_Maker(CREATE_CHAT, key, content=group_pub_key)
+        packets = protocols.Packet_Maker(CREATE_CHAT)
         for packet in packets:
             server.send(packet)
         server_response = server.recv(PACKET_SIZE)
         user_values.pincode = pac_comp.decrypt(server_response[HEADER_SIZE:].strip(b'\x00'),key).decode("utf-8")
+        user_values.group_key = get_random_bytes(32)
+        user_values.rsa_group_key = RSA.generate(2048)
         print(user_values.pincode)
         chat_frame.tkraise()
         user_values.on_chat_raise()
 
-    tkinter.Label(chat_picker_frame,text=f"hello user_values.username!",font="arial 23").grid(row=0,column=0,columnspan=3,sticky="NWE")
+    # tkinter.Label(chat_picker_frame,text=f"hello {user_values.username}!",font="arial 23").grid(row=0,column=0,columnspan=3,sticky="NWE")
 
     chat_picker_frame.grid_columnconfigure(0,weight=1)
     chat_picker_frame.grid_columnconfigure(2,weight=1)

@@ -30,11 +30,15 @@ NOTIFICATION_SETUP = b'\x18'
 CREATE_CHAT = b'\x19'
 CANT_JOIN_CHAT = b'\x1a'
 END_SETTION = b'\x1b'
+SEND_GROUP_KEYS = b'\x1c'
+SEND_FIRST_KEY = b'\x1d'
+
+
+
 #flags - to chack packet validitys and to let the reciver know for sure what this packet is
 CONTENT_PACKET = b'\x01'
 FILE_NAME_PACKET = b'\x02'
-SOMETHING_ELSE = B"\x03"
-
+SOMETHING_ELSE = b'\x03'
 HEADER_SIZE = 16 # bytes
 PACKET_SIZE = 1024  #bytes
 CONTENT_SIZE = PACKET_SIZE - HEADER_SIZE

@@ -11,12 +11,8 @@ def sing_key(RSA_key, DH_public_key):
     return pow(DH_public_key, RSA_key.d, RSA_key.n)
 
 def key_ganerator():
-    key_file = open("mykey.pem","wb+")
+    key_file = open("mykey.bin","rb")
     file_content = key_file.read()
-    key = None
-    if file_content == b"":
-        key = RSA.generate(2048)
-        key_file.write(key.export_key("PEM"))
-    else:
-        key = RSA.import_key(file_content)
+    key_file.close()
+    key = RSA.import_key(file_content)
     return key

@@ -62,15 +62,16 @@ class Packet_Maker:
             self.amount_info_packets += (len(self.e_file_name)//CONTENT_SIZE) + 1
 
         elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST,CREATE_CHAT]:
-            self.amount_info_packets += 1
+            pass
         
-        elif request in [SEND_MSG, LOGIN, REGISTER, SEND_PINCODE]:
+        elif request in [SEND_MSG, LOGIN, REGISTER, SEND_PINCODE,JOIN_CHAT]:
             pass
         
         if self.content:
             self.content = self.encrypt(content)
             self.amount_content_packets = (len(self.content)//CONTENT_SIZE) + 1
-
+        else:
+            self.amount_info_packets += 1
         packet_id = uuid.uuid4().bytes[:8]
 
         self.amount_of_packets = self.amount_content_packets + self.amount_info_packets

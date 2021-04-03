@@ -16,6 +16,7 @@ def Create_Frame(email_validetor_frame, register_frame, chat_picker_frame,server
             server.send(pac)
             server_response = server.recv(PACKET_SIZE)
             if pac_comp.is_logged_in(server_response):
+                tkinter.Label(chat_picker_frame,text=f"hello {user_values.username}!",font="arial 23").grid(row=0,column=0,columnspan=3,sticky="NWE")
                 chat_picker_frame.tkraise()
             else:
                 print("error msg")

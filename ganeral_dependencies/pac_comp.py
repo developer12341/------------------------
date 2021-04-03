@@ -1,4 +1,4 @@
-import struct
+import struct,hashlib
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies.AES_crypto import decrypt
 from ganeral_dependencies.protocols import Packet_Maker
@@ -29,13 +29,52 @@ def get_shared_secret(server, cur_shared_secrat,dh_parameters):
     return cur_shared_secrat
 
     
+def hash_key(key):
+    return hashlib.sha256(int_to_bytes(key)).hexdigest().encode("ascii")
 
+def get_server_response(server):
+    packet = server.recv(PACKET_SIZE)
+    content = b''
+    request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+    content += packet[HEADER_SIZE:]
+    if packet_amount > 1:
+        for _ in range(packet_amount-1):
+            packet = server.recv(PACKET_SIZE)
+            content += packet[HEADER_SIZE:]
+    return request, content.strip(b'\x00')
+    
+def key_exchange(server,parameters):
+    request, public_key = recive_public_key(server)
+    while request == GET_GROUP_KEY:
+        print("public key: " + str(public_key))
+        try:
+            public_key_int = bytes_to_int(public_key[1:])
+            content = int_to_bytes(public_key[0]) + int_to_bytes(parameters.gen_shared_key(public_key_int))
+            packets = Packet_Maker(SEND_GROUP_KEYS,content=content)
+            for packet in packets:
+                server.send(packet)
+            request, public_key = recive_public_key(server)
+        except Exception as e:
+            print("public key: " + str(public_key))
+            raise e
+        
+    if request == END_SETTION:
+        public_key = bytes_to_int(public_key.strip(b'\x00'))
+        group_key = hash_key(parameters.gen_shared_key(public_key))
+        print("group_key: " + str(group_key))
+        return group_key
+
+        
+
+
+    
 
 
 def extract_group_key(server):
     request, request_id, packet_amount, packet_number, flag = buffer_extractor(server.recv(HEADER_SIZE))
-    content = server.recv(CONTENT_SIZE)
     while packet_number + 1 < packet_amount:
+        print("hello")
+        content = server.recv(CONTENT_SIZE)
         request, request_id, packet_amount, packet_number, flag = buffer_extractor(server.recv(HEADER_SIZE))
     return content[0], bytes_to_int(content[1:])
     
@@ -114,11 +153,13 @@ def can_enter_chat(packet):
     
     #packet validity
     if packet_number >= packet_amount:
+        print("packet_number: " + str(packet_number))
+        print("packet_amount: " + str(packet_amount))
         raise Exception("this packets are invalid")
 
-    if request == JOIN_CHAT:
-        return False
-    elif request == CANT_JOIN_CHAT:
+    if request == SEND_GROUP_KEYS:
         return True
+    elif request == CANT_JOIN_CHAT:
+        return False
     else:
         raise Exception("this packet is not a valid type, please chack the server side for bugs")
