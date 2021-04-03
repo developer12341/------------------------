@@ -38,6 +38,7 @@ def create_frame(register_frame, login_frame, email_validate_frame, server, key,
         username_entry.delete(0, 'end')
         password_entry.delete(0, 'end')
         re_password_entry.delete(0, 'end')
+        email_entry.delete(0, 'end')
         today = datetime.date.today()
         birthday_picker.set_date(today)
 
@@ -81,7 +82,6 @@ def create_frame(register_frame, login_frame, email_validate_frame, server, key,
                 server.send(packet)
 
             server_response = server.recv(PACKET_SIZE)
-            # print(server_response)
             can_auth, reason = protocol_digest.can_auth_email(server_response)
             if can_auth:
                 user_values.username = username

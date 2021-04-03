@@ -12,14 +12,12 @@ server.listen()
 
 # setting up needed variables and objects
 
-data_base = sql_manager.UsersDatabase("userdata")
+database = sql_manager.UsersDatabase("userdata")
 
 server_key = server_enc.key_generator()
 
-# {client_id: notification_client_obj}
-clientid_client = {}
 # {chatId: [client,client...], ...}
-chatId_cli = {}
+chat_id_cli = {}
 
 user_list = []
 while True:
@@ -33,7 +31,6 @@ while True:
 
     shared_secrete = DH_parameters.gen_shared_key(client_public_key)
 
-    thread = client_thread.RequestHandler(client, addr, shared_secrete, data_base, chatId_cli, chatId_cli,
-                                          user_list)
+    thread = client_thread.RequestHandler(client, addr, shared_secrete, database, chat_id_cli, user_list)
 
     thread.start()

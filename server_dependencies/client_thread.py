@@ -15,7 +15,7 @@ from server_dependencies import email_send
 
 
 class RequestHandler(threading.Thread):
-    def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, client_chat_id, user_list):
+    def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, user_list):
         self.client = client
         self.addr = addr
         self.key = hashlib.sha256(int_to_bytes(shared_secret)).hexdigest().encode("utf-8")
@@ -23,7 +23,6 @@ class RequestHandler(threading.Thread):
         self.queue_requests = []
         self.user_list = user_list
         self.current_details = []
-        self.client_chat_id = client_chat_id  # {client: chat_id}
         self.chat_id_cli = chat_id_cli  # {chatId: [client,client...], ...}
         self.chat_id = None
         self.username = None
@@ -49,7 +48,6 @@ class RequestHandler(threading.Thread):
             # receive packets from client
             packet = self.client.recv(PACKET_SIZE)
             if packet == b'':
-                # print(f"{self.addr} closed")
                 self.close_conn()
                 return
             request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
@@ -93,7 +91,6 @@ class RequestHandler(threading.Thread):
 
     def send_group_keys(self):
         for packet in self.queue_requests:
-            # print("user get packets: " + str(packet))
             self.chat_id_cli[self.chat_id][-1].send(packet)
 
     # def get_group_key(self):
@@ -113,7 +110,6 @@ class RequestHandler(threading.Thread):
         chat_id = chat_id.encode("utf-8")
         print(chat_id)
         self.chat_id_cli[chat_id] = [self.client]
-        self.client_chat_id[self.client] = chat_id
         self.chat_id = chat_id
         packets = PacketMaker(JOIN_CHAT, self.key, content=chat_id)
         for packet in packets:
@@ -156,8 +152,8 @@ class RequestHandler(threading.Thread):
             if username in self.user_list:
                 packets = PacketMaker(USER_LOGGED_IN, self.key)
             else:
-                # print(self.user_list)
                 self.user_list.append(username)
+                self.username = username
                 packets = PacketMaker(REG_LOGIN_SUC, self.key)
         else:
             packets = PacketMaker(REG_LOGIN_FAIL, self.key)
@@ -184,9 +180,7 @@ class RequestHandler(threading.Thread):
         elif self.db_obj.does_email_exist(email):
             packets = PacketMaker(EMAIL_TAKEN, self.key)
         else:
-            # print(email)
             id_check = email_send.send_authentication_email(email)
-            # print(id_check)
             if not id_check:
                 packets = PacketMaker(EMAIL_DOESNT_EXIST, self.key)
             else:
@@ -202,11 +196,11 @@ class RequestHandler(threading.Thread):
             pin_code += packet[HEADER_SIZE:]
         pin_code = pin_code.strip(b'\x00')
         pin_code = self.decrypt(pin_code).decode("utf-8")
-        # print(pin_code)
         if self.id_check != pin_code:
             packets = PacketMaker(AUTHENTICATE_EMAIL, self.key)
         else:
             self.user_list.append(self.current_details[0])
+            self.username = self.current_details[0]
             packets = PacketMaker(REG_LOGIN_SUC, self.key)
             self.db_obj.insert_user(*self.current_details)
         self.client.send(next(packets))
@@ -225,5 +219,4 @@ class RequestHandler(threading.Thread):
     def close_conn(self):
         if self.username:
             del self.user_list[self.user_list.index(self.username)]
-
         self.keep_running = False

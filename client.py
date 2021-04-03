@@ -20,5 +20,4 @@ server_pub_key = pub_DH_KEY
 shared_secret = parameters.gen_shared_key(server_pub_key)
 server.send(int_to_bytes(my_pub_key))
 key = hashlib.sha256(int_to_bytes(shared_secret)).hexdigest().encode("utf-8")
-print(key)
 gui_manager.main(server, key)

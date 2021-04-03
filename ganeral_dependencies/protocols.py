@@ -11,8 +11,9 @@ from ganeral_dependencies.global_values import *
 
 
 class PacketMaker:
+    amount_info_packets: int
 
-    def __init__(self, request, shared_secrete=b'', content=None, file_path=None):
+    def __init__(self, request, shared_secrete=b'', content=None, file_path=None, username=None):
         """
             preparing the packets for construction and the header
         """
@@ -20,22 +21,21 @@ class PacketMaker:
         self.amount_info_packets = 0
         self.amount_content_packets = 0
         self.content = content
-        self.username = None
+        self.username = username
         self.file_path = file_path
+        self.amount_username_packets = 0
         if request == SEND_FILE:
             # edge case - sending file without a name or a type
             if not file_path:
                 raise Exception("you must have a file path to send a file!")
 
             # encrypt the file name and file itself
-            self.username = self.encrypt(content)
             self.e_file_name = self.encrypt(extract_file_name(file_path))
             with open(file_path, "rb") as f:
                 self.content = f.read()
             # self.content = self.encrypt(content)
             print("self.e_file_name: " + self.e_file_name)
             self.amount_info_packets += (len(self.e_file_name) // CONTENT_SIZE) + 1
-            self.amount_info_packets += (len(self.username) // CONTENT_SIZE) + 1
 
         elif request == SEND_IMG:
             # #displaying a suggestion
@@ -57,14 +57,12 @@ class PacketMaker:
             img.save(buffer, format=file_format)
 
             # encrypt the content of the image and the file name
-            self.username = self.encrypt(content)
             self.content = buffer.getvalue()
 
             # self.content = self.encrypt(self.content)
             self.e_file_name = self.encrypt(file_name.encode("utf-8"))
 
             self.amount_info_packets += (len(self.e_file_name) // CONTENT_SIZE) + 1
-            self.amount_info_packets += (len(self.username) // CONTENT_SIZE) + 1
 
         elif request in [REG_LOGIN_FAIL, USERNAME_TAKEN, REG_LOGIN_SUC, AUTHENTICATE_EMAIL, EMAIL_DOESNT_EXIST,
                          CREATE_CHAT]:
@@ -78,6 +76,12 @@ class PacketMaker:
             self.amount_content_packets = (len(self.content) // CONTENT_SIZE) + 1
         else:
             self.amount_info_packets += 1
+
+        if self.username:
+            self.username = self.encrypt(self.username)
+            self.amount_info_packets += (len(self.username) // CONTENT_SIZE) + 1
+            self.amount_username_packets = (len(self.username) // CONTENT_SIZE) + 1
+
         packet_id = uuid.uuid4().bytes[:8]
 
         self.amount_of_packets = self.amount_content_packets + self.amount_info_packets
@@ -91,6 +95,7 @@ class PacketMaker:
         self.amount_of_packets += self.packet_index
         self.header = request + packet_id
         self.header += self.amount_of_packets.to_bytes(3, "big")
+
 
     def encrypt(self, data):
         if self.key:
@@ -117,35 +122,41 @@ class PacketMaker:
         if self.packet_index >= self.amount_of_packets:
             raise StopIteration
 
-        packet: Union[bytes, Any] = self.header
-        packet += self.packet_index.to_bytes(3, "big")
+        container: Union[bytes, Any] = self.header
+        container += self.packet_index.to_bytes(3, "big")
         if self.packet_index < self.amount_info_packets:
             if self.username:
-                packet += USERNAME_PACKET
-                print("USERNAME_PACKET")
+                container += USERNAME_PACKET
                 if len(self.username) > CONTENT_SIZE:
-                    packet += self.username[:CONTENT_SIZE]
+                    container += self.username[:CONTENT_SIZE]
                     self.username = self.username[CONTENT_SIZE:]
                 else:
-                    packet += self.username
+                    container += self.username
                     self.username = None
             elif self.file_path:
-                print("file_name packets")
-
-                packet += FILE_NAME_PACKET
+                container += FILE_NAME_PACKET
 
                 if len(self.e_file_name) > CONTENT_SIZE:
-                    packet += self.e_file_name[self.packet_index * CONTENT_SIZE:(self.packet_index + 1) * CONTENT_SIZE]
+                    container += self.e_file_name[(self.packet_index - self.amount_username_packets) * CONTENT_SIZE:((self.packet_index - self.amount_username_packets) + 1) * CONTENT_SIZE]
                 else:
-                    packet += self.e_file_name[self.packet_index * CONTENT_SIZE:]
+                    container += self.e_file_name[(self.packet_index - self.amount_username_packets) * CONTENT_SIZE:]
             else:
-                packet += SOMETHING_ELSE
+                container += SOMETHING_ELSE
         else:
-            print("content_packets")
 
-            packet += CONTENT_PACKET
+            container += CONTENT_PACKET
             if self.content:
-                packet += self.content[self.packet_index * CONTENT_SIZE:(self.packet_index + 1) * CONTENT_SIZE]
+                container += self.content[(self.packet_index - self.amount_info_packets) * CONTENT_SIZE:((self.packet_index - self.amount_info_packets) + 1) * CONTENT_SIZE]
 
         self.packet_index += 1
-        return packet + bytes(PACKET_SIZE - len(packet))
+
+        return container + bytes(PACKET_SIZE - len(container))
+
+
+if __name__ == "__main__":
+    group_key = get_random_bytes(32)
+    username = "idodon".encode("utf-8")
+    filepath = "C:\\Users\\idodo\\Desktop\\ido_don_sendme_20-21\\ganeral_dependencies\\sample_img.jpeg"
+    packets = PacketMaker(SEND_IMG, file_path=filepath, shared_secrete=group_key,username=username)
+    for packet in packets:
+        print(packet)

@@ -1,6 +1,6 @@
-import hashlib
 import os
 import socket
+import subprocess
 import threading
 import time
 import tkinter
@@ -13,6 +13,17 @@ from ganeral_dependencies.AES_crypto import decrypt
 from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes
 from ganeral_dependencies.global_values import *
 
+FILE_BROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
+
+
+def explore(path):
+    # explorer would choke on forward slashes
+    path = os.path.normpath(path)
+
+    if os.path.isdir(path):
+        subprocess.run([FILE_BROWSER_PATH, path])
+    elif os.path.isfile(path):
+        subprocess.run([FILE_BROWSER_PATH, '/select,', os.path.normpath(path)])
 
 
 class ProcessPackets(threading.Thread):
@@ -44,7 +55,7 @@ class ProcessPackets(threading.Thread):
                 elif self.request_queue[0][0] in [SEND_FILE, SEND_IMG]:
                     file_content = protocol_digest.decrypt(self.request_queue[0][1][1], self.user_values.group_key)
                     file_name = protocol_digest.decrypt(self.request_queue[0][1][0], self.user_values.group_key)
-                    with open(".\\files\\" + file_name, "wb") as file_:
+                    with open(".\\files\\" + file_name.decode("utf-8"), "wb") as file_:
                         file_.write(file_content)
                     del self.request_queue[0]
             time.sleep(0.05)
@@ -85,26 +96,21 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
         chat_entry.delete(0, "end")
 
     def on_send_file():
-        # if not loop.img_send_stop:
         filepath = askopenfilename()
         if filepath:
-            # chat_entry.grid_forget()
-            # progress.grid(row=1,column=0,sticky="NWES")
-            # loop.img_send_stop = True
-            packets = protocols.PacketMaker(SEND_IMG, content=user_values.username.encode("utf-8"),
-                                            shared_secrete=user_values.group_key, file_path=filepath)
+            packets = protocols.PacketMaker(SEND_IMG, shared_secrete=user_values.group_key,
+                                            username=user_values.username.encode("utf-8"), file_path=filepath)
             for packet in packets:
                 server.send(packet)
 
     def select_from_list_box(event):
         pass
-        # courser = list_box.curselection()
-        # # Updating label text to selected option
-        # value = list_box.get(courser)
-        # print(value)
-        # if value.find(" sent a file") != -1:
-        #     username = value[:value.find(" sent a file")]
-        #     clickable_links[user_values]
+        courser = list_box.curselection()
+        # Updating label text to selected option
+        value = list_box.get(courser)
+        print(value)
+        if value in clickable_links:
+            explore(clickable_links[value])
 
     def msg_listener(*args):
         if user_values.pin_code:
@@ -142,14 +148,11 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
                             file_content += packet[HEADER_SIZE:]
                         elif flag == USERNAME_PACKET:
                             username += packet[HEADER_SIZE:]
-                    print("username: " + str(username))
-                    print("file_content: " + str(file_content))
-                    print("file_name: " + str(file_name))
                     user_values.process_thread.add_request([request, [file_name, file_content]])
                     username = decrypt(username, user_values.group_key)
                     list_box.insert(tkinter.END, username.decode("utf-8") + " sent a file")
                     file_path = os.getcwd() + "\\files"
-                    clickable_links[username.decode("utf-8")] = file_path
+                    clickable_links[username.decode("utf-8") + " sent a file"] = file_path
 
                 else:
                     msg = b''

@@ -143,4 +143,4 @@ class UsersDatabase:
 if __name__ == "__main__":
     u = UsersDatabase("userdata")
     user_id = u.password_check("idodon", "")
-    # print(user_id)
+    print(user_id)

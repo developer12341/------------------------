@@ -35,7 +35,7 @@ def is_logged_in(packet):
             raise Exception(
                 "this packet's request doesn't match the flag \n request == REG_LOGIN_SUC\n flag != R_L_SUC")
         return request, True
-    elif request in [REG_LOGIN_FAIL, USER_LOGGED_IN]:
+    elif request == AUTHENTICATE_EMAIL:
         if flag != SOMETHING_ELSE:
             # packet validity
             raise Exception(
