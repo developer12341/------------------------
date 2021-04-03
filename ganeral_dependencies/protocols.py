@@ -96,7 +96,6 @@ class PacketMaker:
         self.header = request + packet_id
         self.header += self.amount_of_packets.to_bytes(3, "big")
 
-
     def encrypt(self, data):
         if self.key:
             header = get_random_bytes(8)
@@ -137,7 +136,8 @@ class PacketMaker:
                 container += FILE_NAME_PACKET
 
                 if len(self.e_file_name) > CONTENT_SIZE:
-                    container += self.e_file_name[(self.packet_index - self.amount_username_packets) * CONTENT_SIZE:((self.packet_index - self.amount_username_packets) + 1) * CONTENT_SIZE]
+                    container += self.e_file_name[(self.packet_index - self.amount_username_packets) * CONTENT_SIZE:((
+                                                                                                                                 self.packet_index - self.amount_username_packets) + 1) * CONTENT_SIZE]
                 else:
                     container += self.e_file_name[(self.packet_index - self.amount_username_packets) * CONTENT_SIZE:]
             else:
@@ -146,7 +146,8 @@ class PacketMaker:
 
             container += CONTENT_PACKET
             if self.content:
-                container += self.content[(self.packet_index - self.amount_info_packets) * CONTENT_SIZE:((self.packet_index - self.amount_info_packets) + 1) * CONTENT_SIZE]
+                container += self.content[(self.packet_index - self.amount_info_packets) * CONTENT_SIZE:((
+                                                                                                                     self.packet_index - self.amount_info_packets) + 1) * CONTENT_SIZE]
 
         self.packet_index += 1
 
@@ -157,6 +158,6 @@ if __name__ == "__main__":
     group_key = get_random_bytes(32)
     username = "idodon".encode("utf-8")
     filepath = "C:\\Users\\idodo\\Desktop\\ido_don_sendme_20-21\\ganeral_dependencies\\sample_img.jpeg"
-    packets = PacketMaker(SEND_IMG, file_path=filepath, shared_secrete=group_key,username=username)
+    packets = PacketMaker(SEND_IMG, file_path=filepath, shared_secrete=group_key, username=username)
     for packet in packets:
         print(packet)
