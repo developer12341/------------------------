@@ -26,7 +26,7 @@ def create_frame(chat_picker_frame,chat_frame,user_values,server,key):
         if request == SEND_GROUP_KEYS:
             # messagebox.showinfo("joining chat", "please wait while we encrypt your comunication line")
             user_values.pincode = pincode
-            print("full msg: " + str(server_response))
+            # print("full msg: " + str(server_response))
             group_private_key, group_dh_key = server_response.strip(b'\x00').split(b"end_private_key")
             user_values.rsa_group_key = AES_crypto.rsa_decrypt(group_private_key,rsa_key)
             group_private_key = RSA.import_key(user_values.rsa_group_key)

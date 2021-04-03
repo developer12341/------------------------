@@ -2,7 +2,7 @@ import tkinter
 from ganeral_dependencies.protocols import Packet_Maker
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies import pac_comp
-def Create_Frame(email_validetor_frame, register_frame, chat_picker_frame,server,key):
+def Create_Frame(email_validetor_frame, register_frame, user_values, chat_picker_frame,server,key):
 
     def regiater():
         register_frame.tkraise()
@@ -10,7 +10,7 @@ def Create_Frame(email_validetor_frame, register_frame, chat_picker_frame,server
     def on_submit(*args):
         pincode = pincode_entry.get()
         if len(pincode) == 6:
-            content = pincode.encode("ascii")
+            content = pincode.encode("utf-8")
             packets = Packet_Maker(SEND_PINCODE,key,content=content)
             pac = next(packets)
             server.send(pac)

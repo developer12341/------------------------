@@ -1,36 +1,77 @@
 import tkinter,threading,datetime, tkcalendar
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies import pac_comp,protocols
+import re
+ 
+# Make a regular expression for validating an Email
+regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
+ 
+# Define a function for validating an Email
+def is_valid_email(email):
+    # pass the regular expression and the string in search() method
+    if( re.search(regex, email)):
+        return True
+    else:
+        return False
+ 
+error_msgs = {USERNAME_TAKEN: "this username is taken, please pick a diffrent one",
+EMAIL_DOSENT_EXIST:"this email doesn't exist",
+EMAIL_TAKEN:"there is allready a user with this email address"}
 def Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,user_values):
     
     def login():
         login_frame.tkraise()
 
-    def on_submit():
+    def on_submit(*args):
+        date_error.grid_forget()
+        email_error.grid_forget()
+        Re_password_error.grid_forget()
+        username_error.grid_forget()
+        password_error.grid_forget()
+        server_error.grid_forget()
+        
         username = username_entry.get()
         password = password_entry.get()
+        re_password = Re_password_entry.get()
         birthday = birthday_picker.get_date()
         today = datetime.date.today()
         email = email_entry.get()
+        send = True
         if birthday > today:
-            date_error.grid(row=8,column=0,columnspan=2)
-        
-        content = username.encode("ascii") + bytes(USERNAME_MAX_LEN-len(username))
-        content += password.encode("ascii") + bytes(PASSWORD_MAX_LEN-len(password))
-        content += birthday.year.to_bytes(2,"big") + bytes([birthday.month]) + bytes([birthday.day])
-        content += email.encode("Ascii")
-        packets = protocols.Packet_Maker(REGISTER,key,content=content)
-        for packet in packets:
-            server.send(packet)
+            send = False
+            date_error.grid(row=6,column=0,columnspan=2)
+        if not is_valid_email(email):
+            send = False
+            email_error.grid(row=8,column=0,columnspan=2)
+        if password != re_password:
+            send = False
+            Re_password_error.grid(row=4,column=0,columnspan=2)
+        if (len(username) < USERNAME_MIN_LEN or len(username) > USERNAME_MAX_LEN):
+            send = False
+            username_error.grid(row=10,column=0,columnspan=2)
+        if (len(password) < PASSWORD_MIN_LEN or len(password) > PASSWORD_MAX_LEN):
+            send = False
+            password_error.grid(row=9,column=0,columnspan=2)
+        if send:
+            content = username.encode("utf-8") + bytes(USERNAME_MAX_LEN-len(username))
+            content += password.encode("utf-8") + bytes(PASSWORD_MAX_LEN-len(password))
+            content += birthday.year.to_bytes(2,"big") + bytes([birthday.month]) + bytes([birthday.day])
+            content += email.encode("utf-8")
+            packets = protocols.Packet_Maker(REGISTER,key,content=content)
+            for packet in packets:
+                server.send(packet)
 
-        server_response = server.recv(PACKET_SIZE)
-        #print(server_response)
-        can_auth, reasone =  pac_comp.can_auth_email(server_response)
-        if can_auth:
-            user_values.username = username
-            email_validetor_frame.tkraise()
-        else:
-            print("error msg")
+            server_response = server.recv(PACKET_SIZE)
+            #print(server_response)
+            can_auth, reasone =  pac_comp.can_auth_email(server_response)
+            if can_auth:
+                user_values.username = username
+                email_validetor_frame.tkraise()
+            else:
+                print(error_msgs[reasone])
+                server_error_var.set(error_msgs[reasone])
+                server_error.grid(row=11,column=0,columnspan=2)
+
 
 
 
@@ -44,52 +85,64 @@ def Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,use
     username_entry = tkinter.Entry(register_frame,font=15)
     username_entry.grid(row=1,column=1,pady=(20,0))
 
-    username_error = tkinter.Label(register_frame,text = "the username must be between 5 and 20 charactors", fg="red")
-    username_error.grid(row=2,column=0,columnspan=2)
-    username_error.grid_forget()
 
-    tkinter.Label(register_frame,text="password:",font=15).grid(row=3,column=0,sticky="E",pady=(20,0))
+    tkinter.Label(register_frame,text="password:",font=15).grid(row=2,column=0,sticky="E",pady=(20,0))
     password_entry = tkinter.Entry(register_frame,font=15,show="*")
-    password_entry.grid(row=3,column=1,pady=(20,0))
+    password_entry.grid(row=2,column=1,pady=(20,0))
 
-    password_error = tkinter.Label(register_frame,text = "the password must be between 5 and 20 charactors", fg="red")
-    password_error.grid(row=4,column=0,columnspan=2)
-    password_error.grid_forget()
 
-    tkinter.Label(register_frame,text="enter password again:",font=15).grid(row=5,column=0,sticky="E",pady=(20,0))
+    tkinter.Label(register_frame,text="enter password again:",font=15).grid(row=3,column=0,sticky="E",pady=(20,0))
     Re_password_entry = tkinter.Entry(register_frame,font=15,show="*")
-    Re_password_entry.grid(row=5,column=1,pady=(20,0))
+    Re_password_entry.grid(row=3,column=1,pady=(20,0))
 
-    tkinter.Label(register_frame,text="birthday:",font=15).grid(row=6,column=0,sticky="E",pady=(20,0))
+    Re_password_error = tkinter.Label(register_frame,text = "the passwords do not match", fg="red")
+    Re_password_error.grid(row=4,column=0,columnspan=2)
+    Re_password_error.grid_forget()
+
+    tkinter.Label(register_frame,text="birthday:",font=15).grid(row=5,column=0,sticky="E",pady=(20,0))
     birthday_picker = tkcalendar.DateEntry(register_frame)
-    birthday_picker.grid(row=6,column=1)
+    birthday_picker.grid(row=5,column=1)
+
+    date_error = tkinter.Label(register_frame,text = "this date is not valid", fg="red")
+    date_error.grid(row=6,column=0,columnspan=2)
+    date_error.grid_forget()
 
     tkinter.Label(register_frame,text="email:",font=15).grid(row=7,column=0,sticky="E",pady=(20,0))
     email_entry = tkinter.Entry(register_frame,font=15)
     email_entry.grid(row=7,column=1,pady=(20,0))
 
-    Re_password_error = tkinter.Label(register_frame,text = "the passwords do not match", fg="red")
-    Re_password_error.grid(row=8,column=0,columnspan=2)
-    Re_password_error.grid_forget()
+    email_error = tkinter.Label(register_frame,text = "this email is not valid", fg="red")
+    email_error.grid(row=8,column=0,columnspan=2)
+    email_error.grid_forget()
+
+    password_error = tkinter.Label(register_frame,text = f"the password must be between {PASSWORD_MIN_LEN} and {PASSWORD_MAX_LEN} charactors", fg="red")
+    password_error.grid(row=9,column=0,columnspan=2)
+    password_error.grid_forget()
+
+    username_error = tkinter.Label(register_frame,text = f"the username must be between {USERNAME_MIN_LEN} and {USERNAME_MAX_LEN} charactors", fg="red")
+    username_error.grid(row=10,column=0,columnspan=2)
+    username_error.grid_forget()
 
 
-    date_error = tkinter.Label(register_frame,text = "this date is not valid", fg="red")
-    date_error.grid(row=9,column=0,columnspan=2)
-    date_error.grid_forget()
-
-    text_msg = tkinter.StringVar()
-    server_error = tkinter.Label(register_frame,textvariable= text_msg, fg="red")
-    server_error.grid(row=10,column=0,columnspan=2)
+    server_error_var = tkinter.StringVar()
+    server_error = tkinter.Label(register_frame,textvariable= server_error_var, fg="red")
+    server_error.grid(row=11,column=0,columnspan=2)
     server_error.grid_forget()
 
-    tkinter.Button(register_frame,text="send",font=15,command = on_submit).grid(row=11,column=0,pady=(20,0))
+    tkinter.Button(register_frame,text="send",font=15,command = on_submit).grid(row=12,column=0,pady=(20,0))
 
-    tkinter.Button(register_frame,text="clear",font=15).grid(row=11,column=1,pady=(20,0))
+    tkinter.Button(register_frame,text="clear",font=15).grid(row=12,column=1,pady=(20,0))
 
-    tkinter.Label(register_frame,text="already have a user?", font=20).grid(row=12,column=0,columnspan=2,pady=(20,0))
-    tkinter.Button(register_frame,text="log in",font=15,command=login).grid(row=13,column=0,columnspan=2,pady=(20,0))
+    tkinter.Label(register_frame,text="already have a user?", font=20).grid(row=13,column=0,columnspan=2,pady=(20,0))
+    tkinter.Button(register_frame,text="log in",font=15,command=login).grid(row=14,column=0,columnspan=2,pady=(20,0))
 
-    
+if __name__ == "__main__":
+    root = tkinter.Tk()
+    root.minsize(500,500)
+    root.maxsize(1500,1500)
+    Create_Frame(root,None,None,None,None,None)
+    root.mainloop()
+
 # def main(self):
 #     def close():
 #         self.close_protocol = True
@@ -164,7 +217,7 @@ def Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,use
 #                 self.cur_window = "chat_picker"
 #                 window.destroy()
 #             else:
-#                 text_msg.set(msg)
+#                 server_error_var.set(msg)
 #                 server_error.grid(row=9,column=0,columnspan=2)
 
 #     def on_enter(event):
@@ -214,7 +267,7 @@ def Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,use
 #                 self.cur_window = "chat_picker"
 #                 window.destroy()
 #             else:
-#                 text_msg.set(msg)
+#                 server_error_var.set(msg)
 #                 server_error.grid(row=9,column=0,columnspan=2)
 
 #     def on_clear():
@@ -298,8 +351,8 @@ def Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,use
 #     date_error.grid(row=8,column=0,columnspan=2)
 #     date_error.grid_forget()
 
-#     text_msg = tkinter.StringVar()
-#     server_error = tkinter.Label(window,textvariable= text_msg, fg="red")
+#     server_error_var = tkinter.StringVar()
+#     server_error = tkinter.Label(window,textvariable= server_error_var, fg="red")
 #     server_error.grid(row=9,column=0,columnspan=2)
 #     server_error.grid_forget()
 

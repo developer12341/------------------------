@@ -8,15 +8,15 @@ from Crypto.Random import get_random_bytes
 from base64 import b64encode, b64decode
 
 class request_heandler(threading.Thread):
-    def __init__(self, client, addr, shared_secret, db_obj, chatId_cli, client_chatid, chatid_pubkey):
+    def __init__(self, client, addr, shared_secret, db_obj, chatId_cli, client_chatid, chatid_pubkey,user_list):
         self.queue_requests = []
         self.client = client
         self.addr = addr
-        self.key = hashlib.sha256(self.int_to_bytes(shared_secret)).hexdigest().encode("ascii")
+        self.key = hashlib.sha256(self.int_to_bytes(shared_secret)).hexdigest().encode("utf-8")
+        # print(self.key)
         self.db_obj = db_obj
-        self.is_logged_in = False
         self.username = None
-
+        self.user_list = user_list
         self.current_details = []
         #{client: chat_id}
         self.client_chatid  = client_chatid
@@ -35,7 +35,6 @@ class request_heandler(threading.Thread):
 
 
     def decrypt(self,json_input):
-        
         if json_input:
             json_input = json_input.strip(b'\x00')
             b64 = json.loads(json_input)
@@ -76,8 +75,6 @@ class request_heandler(threading.Thread):
                 self.join_chat()
             elif request == CREATE_CHAT:
                 self.create_chat()
-            elif request == SEND_FRIEND_REQ:
-                self.send_friend_req()
             elif request == GET_USERS:
                 self.get_users()
             elif request == GET_GROUP_KEY:
@@ -88,8 +85,6 @@ class request_heandler(threading.Thread):
                 self.leave_chat()
             elif request == SEND_PINCODE:
                 self.authenticat_email()
-            elif request == NOTIFICATION_SETUP:
-                self.notification_setup()
             elif request == SEND_GROUP_KEYS:
                 self.send_group_keys()
             elif request == SEND_FIRST_KEY:
@@ -111,15 +106,13 @@ class request_heandler(threading.Thread):
 
     def send_group_keys(self):
         for packet in self.queue_requests:
-            print("user get packets: " + str(packet))
+            # print("user get packets: " + str(packet))
             self.chatId_cli[self.chat_id][-1].send(packet)
         
 
     def notification_setup(self):
         client_notification, addr = self.notification_server.accept()
         
-    def send_friend_req(self):
-        pass
 
     def get_group_key(self):
         cli_group_pub_key = b''
@@ -156,7 +149,6 @@ class request_heandler(threading.Thread):
             packets = Packet_Maker(GET_GROUP_KEY,content=cli_public_key)
             self.chatId_cli[pin_code].append(self.client)
             for packet in packets:
-                print("host get packets: " + str(packet))
                 self.chatId_cli[pin_code][0].send(packet)
             self.chat_id = pin_code
             # packet = Packet_Maker(JOIN_CHAT,content=)
@@ -189,11 +181,16 @@ class request_heandler(threading.Thread):
             login_details += packet[HEADER_SIZE:]
         login_details = self.decrypt(login_details.strip(b'\x00'))
         username, password = login_details[:USERNAME_MAX_LEN], login_details[USERNAME_MAX_LEN:]
-        username = username.strip(b'\x00').decode("ascii")
-        password = password.strip(b'\x00').decode("ascii")
+        username = username.strip(b'\x00').decode("utf-8")
+        password = password.strip(b'\x00').decode("utf-8")
         client_id = self.db_obj.password_chack(username,password)
         if client_id:
-            packets = Packet_Maker(REG_LOGIN_SUC,self.key)
+            if username in self.user_list:
+                packets = Packet_Maker(USER_LOGGED_IN,self.key)
+            else:
+                # print(self.user_list)
+                self.user_list.append(username)
+                packets = Packet_Maker(REG_LOGIN_SUC,self.key)
         else:
             packets = Packet_Maker(REG_LOGIN_FAIL,self.key)
 
@@ -209,14 +206,16 @@ class request_heandler(threading.Thread):
             register_details += packet[HEADER_SIZE:]
         
         register_details = self.decrypt(register_details)
-        username, password, Byear, Bmonth, Bday = struct.unpack("30s 100s 2s 1s 1s",register_details[:134])
+        username, password, Byear, Bmonth, Bday = struct.unpack(f"{USERNAME_MAX_LEN}s {PASSWORD_MAX_LEN}s 2s 1s 1s",register_details[:134])
         birthday= datetime.date(int.from_bytes(Byear,"big"), Bmonth[0], Bday[0])
-        username = username.strip(b'\x00').decode("ascii")
-        password = password.strip(b'\x00').decode("ascii")
-        email = register_details[134:].strip(b'\x00').decode("ascii")
+        username = username.strip(b'\x00').decode("utf-8")
+        password = password.strip(b'\x00').decode("utf-8")
+        email = register_details[134:].strip(b'\x00').decode("utf-8")
 
-        if self.db_obj.does_user_exist(username,email):
+        if self.db_obj.does_user_exist(username):
             packets = Packet_Maker(USERNAME_TAKEN,self.key)
+        elif self.db_obj.does_email_exist(email):
+            packets = Packet_Maker(EMAIL_TAKEN,self.key)
         else:
             #print(email)
             id_chacker = email_send.send_authentication_email(email)
@@ -236,11 +235,12 @@ class request_heandler(threading.Thread):
         for packet in self.queue_requests:
             pincode += packet[HEADER_SIZE:]
         pincode = pincode.strip(b'\x00')
-        pincode = self.decrypt(pincode).decode("ascii")
+        pincode = self.decrypt(pincode).decode("utf-8")
         #print(pincode)
         if self.id_chacker != pincode:
             packets = Packet_Maker(AUTHENTICAT_EMAIL,self.key)
         else:
+            self.user_list.append(self.current_details[0])
             packets = Packet_Maker(REG_LOGIN_SUC,self.key)
             self.db_obj.insert_user(*self.current_details)
         self.client.send(next(packets))
@@ -260,8 +260,9 @@ class request_heandler(threading.Thread):
         pass
 
     def close_conn(self):
-
-        self.is_logged_in = False
+        if self.username:
+            del self.user_list[self.user_list.index(self.username)]
+        
         self.keep_runing = False
 
     def bytes_to_int(self,byte):

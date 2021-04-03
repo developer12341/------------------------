@@ -11,7 +11,7 @@ def int_to_bytes(x: int) -> bytes:
 
 def encrypt(data, DH_shared_KEY):
     header = get_random_bytes(8)
-    key = hashlib.sha256(int_to_bytes(DH_shared_KEY)).hexdigest().encode("ascii")
+    key = hashlib.sha256(int_to_bytes(DH_shared_KEY)).hexdigest().encode("utf-8")
     nonce = get_random_bytes(16)
     cipher = AES.new(key, AES.MODE_SIV, nonce=nonce)
     cipher.update(header)

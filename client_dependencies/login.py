@@ -1,6 +1,6 @@
 import tkinter,threading
 from ganeral_dependencies import protocols,pac_comp
-from ganeral_dependencies.global_values import LOGIN,PASSWORD_MAX_LEN,USERNAME_MAX_LEN, PACKET_SIZE
+from ganeral_dependencies.global_values import *
 def Create_Frame(login_frame, register_frame, chat_picker_frame,server,key,user_values):
 
     def regiater():
@@ -10,49 +10,77 @@ def Create_Frame(login_frame, register_frame, chat_picker_frame,server,key,user_
         username = username_entry.get()
         password = password_entry.get()
         if username and password:
-            if len(username) > USERNAME_MAX_LEN or len(password) > PASSWORD_MAX_LEN:
-                print("error msg")
-
-            content = username.encode("ascii") + bytes(USERNAME_MAX_LEN-len(username))
-            content += password.encode("ascii") + bytes(PASSWORD_MAX_LEN-len(password))
+            content = username.encode("utf-8") + bytes(USERNAME_MAX_LEN-len(username))
+            content += password.encode("utf-8") + bytes(PASSWORD_MAX_LEN-len(password))
             packets = protocols.Packet_Maker(LOGIN,shared_secrete=key,content=content)
             for packet in packets:
-                #print(packet)
                 server.send(packet)
             
-            server_response = server.recv(PACKET_SIZE)
-            if pac_comp.is_logged_in(server_response):
+            request,can_join_chat = pac_comp.is_logged_in(server.recv(PACKET_SIZE))
+            if can_join_chat:
+                server_error.grid_forget()
                 user_values.username = username
                 tkinter.Label(chat_picker_frame,text=f"hello {user_values.username}!",font="arial 23").grid(row=0,column=0,columnspan=3,sticky="NWE")
                 chat_picker_frame.tkraise()
             else:
-                print("error msg")
-    
+                if request == REG_LOGIN_FAIL:
+                    logged_in_error.grid_forget()
+                    server_error.grid(row=4,column=0,columnspan=2)
+                elif request == USER_LOGGED_IN:
+                    server_error.grid_forget()
+                    logged_in_error.grid(row=4,column=0,columnspan=2)
+        else:
+            length_error["fg"] =  "red"
+
     def on_clear():
         username_entry.delete(0, 'end')
         password_entry.delete(0, 'end')
+        server_error.grid_forget()
+        logged_in_error.grid_forget()
+        length_error["fg"] =  "black"
 
-    login_frame.bind("<Return>",on_submit)
 
     tkinter.Label(login_frame,text="log in",font="arial 15").grid(row=0,column=0,columnspan=2,sticky="NEW")
 
-    login_frame.grid_columnconfigure(0,weight=2)
+    login_frame.grid_columnconfigure(0,weight=1)
     login_frame.grid_columnconfigure(1,weight=1)
 
-    tkinter.Label(login_frame,text="username:",font=15).grid(row=1,column=0,sticky="E",pady=(20,0))
+    login_frame.grid_rowconfigure(0,weight=1)
+    login_frame.grid_rowconfigure(1,weight=1)
+    login_frame.grid_rowconfigure(2,weight=1)
+    login_frame.grid_rowconfigure(5,weight=1)
+    login_frame.grid_rowconfigure(7,weight=1)
+    tkinter.Label(login_frame,text="username:",font=15).grid(row=1,column=0,sticky="E")
     username_entry = tkinter.Entry(login_frame,font=15)
-    username_entry.grid(row=1,column=1,pady=(20,0))
+    username_entry.grid(row=1,column=1)
 
-    tkinter.Label(login_frame,text="password:",font=15).grid(row=2,column=0,sticky="E",pady=(20,0))
+    tkinter.Label(login_frame,text="password:",font=15).grid(row=2,column=0,sticky="E")
     password_entry = tkinter.Entry(login_frame,font=15,show="*")
-    password_entry.grid(row=2,column=1,pady=(20,0))
+    password_entry.grid(row=2,column=1)
 
-    tkinter.Button(login_frame,text="send",font=15,command=on_submit).grid(row=4,column=0,pady=(20,0),sticky="E")
+    length_error = tkinter.Label(login_frame,text= "your username and password must have between 5 and 30 characters")
+    length_error.grid(row=3,column=0,columnspan=2)
+    
+    server_error = tkinter.Label(login_frame, text = "your username or password was incorect",fg = "red")
+    logged_in_error = tkinter.Label(login_frame, text = "you are allready logged in on another computer",fg = "red")
+    
+    tkinter.Button(login_frame,text="send",font=15,command=on_submit).grid(row=5,column=0,sticky="E")
 
-    tkinter.Button(login_frame,text="clear",font=15, command=on_clear).grid(row=4,column=1,pady=(20,0))
+    tkinter.Button(login_frame,text="clear",font=15, command=on_clear).grid(row=5,column=1)
 
-    tkinter.Label(login_frame,text="don't have a user?",font="arial 15").grid(row=6,column=0,columnspan=2,pady=(20,0))
-    tkinter.Button(login_frame,text="register",font=15,command=regiater).grid(row=7,column=0,columnspan=2,pady=(20,0))
+    tkinter.Label(login_frame,text="don't have a user?",font="arial 15").grid(row=6,column=0,columnspan=2)
+    tkinter.Button(login_frame,text="register",font=15,command=regiater).grid(row=7,column=0,columnspan=2)
+    login_frame.bind("<Return>",on_submit)
+    
+if __name__ == "__main__":
+    root = tkinter.Tk()
+    login_frame = tkinter.Frame(root)
+    login_frame.grid(row=0, column=0, sticky='news')
+    root.minsize(500,500)
+    root.maxsize(1500,1500)
+    Create_Frame(login_frame,None,None,None,None,None)
+    root.mainloop()
+
 
 # def main(self):
 #     def close():
@@ -115,20 +143,20 @@ def Create_Frame(login_frame, register_frame, chat_picker_frame,server,key,user_
 #     window.grid_columnconfigure(0,weight=2)
 #     window.grid_columnconfigure(1,weight=1)
 
-#     tkinter.Label(window,text="username:",font=15).grid(row=1,column=0,sticky="E",pady=(20,0))
+#     tkinter.Label(window,text="username:",font=15).grid(row=1,column=0,sticky="E")
 #     username_entry = tkinter.Entry(window,font=15)
-#     username_entry.grid(row=1,column=1,pady=(20,0))
+#     username_entry.grid(row=1,column=1)
 
-#     tkinter.Label(window,text="password:",font=15).grid(row=2,column=0,sticky="E",pady=(20,0))
+#     tkinter.Label(window,text="password:",font=15).grid(row=2,column=0,sticky="E")
 #     password_entry = tkinter.Entry(window,font=15,show="*")
-#     password_entry.grid(row=2,column=1,pady=(20,0))
+#     password_entry.grid(row=2,column=1)
 
-#     tkinter.Button(window,text="send",command= on_submit,font=15).grid(row=4,column=0,pady=(20,0),sticky="E")
+#     tkinter.Button(window,text="send",command= on_submit,font=15).grid(row=4,column=0,sticky="E")
 
-#     tkinter.Button(window,text="clear",font=15,command=on_clear).grid(row=4,column=1,pady=(20,0))
+#     tkinter.Button(window,text="clear",font=15,command=on_clear).grid(row=4,column=1)
 
-#     tkinter.Label(window,text="don't have a user?",font="arial 15").grid(row=6,column=0,columnspan=2,pady=(20,0))
-#     tkinter.Button(window,text="register",font=15, command= register_function).grid(row=7,column=0,columnspan=2,pady=(20,0))
+#     tkinter.Label(window,text="don't have a user?",font="arial 15").grid(row=6,column=0,columnspan=2)
+#     tkinter.Button(window,text="register",font=15, command= register_function).grid(row=7,column=0,columnspan=2)
 
 #     window.mainloop()
 

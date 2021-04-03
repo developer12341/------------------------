@@ -74,7 +74,7 @@ class User_Db:
         conn.commit()
         conn.close()
 
-    def does_user_exist(self,username,email):
+    def does_user_exist(self,username):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT * from users where username = ?"
         c = conn.execute(select_query,(username,))
@@ -82,6 +82,14 @@ class User_Db:
         conn.close()
         return not not (result)
 
+    def does_email_exist(self,email):
+        conn = sqlite3.connect(f'{self.__db_name}.db')
+        select_query = "SELECT * from users where email = ?"
+        c = conn.execute(select_query,(email,))
+        result = c.fetchone()
+        conn.close()
+        return not not (result)
+        
     def password_chack(self, username, password):
         conn = sqlite3.connect(f'{self.__db_name}.db')
         select_query = "SELECT userid FROM users WHERE username = ? AND password = ?"

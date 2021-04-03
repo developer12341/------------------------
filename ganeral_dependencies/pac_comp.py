@@ -30,7 +30,7 @@ def get_shared_secret(server, cur_shared_secrat,dh_parameters):
 
     
 def hash_key(key):
-    return hashlib.sha256(int_to_bytes(key)).hexdigest().encode("ascii")
+    return hashlib.sha256(int_to_bytes(key)).hexdigest().encode("utf-8")
 
 def get_server_response(server):
     packet = server.recv(PACKET_SIZE)
@@ -107,12 +107,12 @@ def is_logged_in(packet):
         if flag != SOMETHING_ELSE:
             #packet validity
             raise Exception("this packet's request doesn't match the flag \n request == REG_LOGIN_SUC\n flag != R_L_SUC")
-        return True
-    elif request in [REG_LOGIN_FAIL,AUTHENTICAT_EMAIL]:
+        return request, True
+    elif request in [REG_LOGIN_FAIL,USER_LOGGED_IN]:
         if flag != SOMETHING_ELSE:
             #packet validity
             raise Exception("this packet's request doesn't match the flag \n request == REG_LOGIN_FAIL\n flag != R_L_FAIL")
-        return False
+        return request, False
     else:
         #packet validity
         raise Exception("this packet isn't REG_LOGIN type, please chack the server side for bugs")
@@ -125,7 +125,7 @@ def can_auth_email(packet):
         raise Exception("this packets are invalid")
     
 
-    if request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST]:
+    if request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST,EMAIL_TAKEN]:
         if flag != SOMETHING_ELSE:
             #packet validity
             raise Exception("this packet's request doesn't match the flag \n request == REG_LOGIN_SUC\n flag != R_L_SUC")

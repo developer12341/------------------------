@@ -11,6 +11,7 @@ class user_values:
 
 def main(server,key):
     user_values.my_key = key
+
     def close():
         user_values.pincode = 0
         time.sleep(0.3)
@@ -33,13 +34,13 @@ def main(server,key):
 
     for frame in (start_frame, login_frame, register_frame, chat_picker_frame, chat_frame,email_validetor_frame):
         frame.grid(row=0, column=0, sticky='news')
-
     start_window.Create_Frame(start_frame,register_frame,login_frame)
+
     register.Create_Frame(register_frame,login_frame,email_validetor_frame,server,key,user_values)
     login.Create_Frame(login_frame,register_frame,chat_picker_frame,server,key,user_values)
-    email_validetor.Create_Frame(email_validetor_frame,register_frame,chat_picker_frame,server,key)
+    email_validetor.Create_Frame(email_validetor_frame,register_frame,user_values,chat_picker_frame,server,key)
     chat_picker.create_frame(chat_picker_frame,chat_frame,user_values,server,key)
     chat.create_frame(root,chat_frame,chat_picker_frame,user_values,server,key)
 
-    login_frame.tkraise()
+    register_frame.tkraise()
     root.mainloop()

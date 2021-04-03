@@ -19,6 +19,7 @@ class Packet_Maker:
         self.amount_info_packets = 0
         self.amount_content_packets = 0
         self.content = content
+        self.username = None
         self.file_path = file_path
         if request == SEND_FILE:
             #edge case - sending file without a name or a type
@@ -27,18 +28,20 @@ class Packet_Maker:
             
 
             #encrypt the file name and file itself
+            self.username = self.encrypt(content)
             self.e_file_name = self.encrypt(extract_file_name(file_path))
             with open(file_path,"rb") as f:
                 self.content = f.read()
             # self.content = self.encrypt(content)
-
+            print("self.e_file_name: " + self.e_file_name)
             self.amount_info_packets += (len(self.e_file_name)//CONTENT_SIZE) + 1
+            self.amount_info_packets += (len(self.username)//CONTENT_SIZE) + 1
 
 
         elif request == SEND_IMG:
-            #displaying a suggestion
-            if content:
-                raise Warning("you don't need to enter content when sending an image")
+            # #displaying a suggestion
+            # if content:
+            #     raise Warning("you don't need to enter content when sending an image")
             
             import PIL
             from PIL import Image
@@ -55,11 +58,14 @@ class Packet_Maker:
             img.save(buffer, format=file_format)
 
             #encrypt the content of the image and the file name
+            self.username = self.encrypt(content)
             self.content = buffer.getvalue()
+
             # self.content = self.encrypt(self.content)
-            self.e_file_name = self.encrypt(file_name.encode("Ascii"))
+            self.e_file_name = self.encrypt(file_name.encode("utf-8"))
 
             self.amount_info_packets += (len(self.e_file_name)//CONTENT_SIZE) + 1
+            self.amount_info_packets += (len(self.username)//CONTENT_SIZE) + 1
 
         elif request in [REG_LOGIN_FAIL,USERNAME_TAKEN,REG_LOGIN_SUC,AUTHENTICAT_EMAIL,EMAIL_DOSENT_EXIST,CREATE_CHAT]:
             pass
@@ -68,7 +74,7 @@ class Packet_Maker:
             pass
         
         if self.content:
-            self.content = self.encrypt(content)
+            self.content = self.encrypt(self.content)
             self.amount_content_packets = (len(self.content)//CONTENT_SIZE) + 1
         else:
             self.amount_info_packets += 1
@@ -119,7 +125,18 @@ class Packet_Maker:
         packet = self.header
         packet += self.packet_index.to_bytes(3,"big")
         if self.packet_index < self.amount_info_packets:
-            if self.file_path:
+            if self.username:
+                packet += USERNAME_PACKET
+                print("USERNAME_PACKET")
+                if len(self.username) > CONTENT_SIZE:
+                    packet += self.username[:CONTENT_SIZE]
+                    self.username = self.username[CONTENT_SIZE:]
+                else:
+                    packet += self.username
+                    self.username = None
+            elif self.file_path:
+                print("file_name packets")
+
                 packet += FILE_NAME_PACKET
                 
                 if len(self.e_file_name) > CONTENT_SIZE:
@@ -129,6 +146,8 @@ class Packet_Maker:
             else:
                 packet += SOMETHING_ELSE
         else:
+            print("content_packets")
+
             packet += CONTENT_PACKET
             if self.content:
                 packet += self.content[self.packet_index*CONTENT_SIZE:(self.packet_index + 1)*CONTENT_SIZE]
