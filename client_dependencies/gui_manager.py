@@ -1,5 +1,5 @@
 import tkinter as tk
-from client_dependencies import start_window, register, login, email_validetor, chat_picker, chat
+from client_dependencies import start_window, register, login, email_validator, chat_picker, chat
 import time
 
 
@@ -40,7 +40,7 @@ def main(server, key):
 
     register.create_frame(register_frame, login_frame, email_validator_frame, server, key, UserValues)
     login.create_frame(login_frame, register_frame, chat_picker_frame, server, key, UserValues)
-    email_validetor.create_frame(email_validator_frame, register_frame, UserValues, chat_picker_frame, server, key)
+    email_validator.create_frame(email_validator_frame, register_frame, UserValues, chat_picker_frame, server, key)
     chat_picker.create_frame(chat_picker_frame, chat_frame, UserValues, server, key)
     chat.create_frame(root, chat_frame, chat_picker_frame, UserValues, server, key)
 

@@ -16,8 +16,7 @@ class UsersDatabase:
         query_str += "username TEXT NOT NULL ,"
         query_str += "password TEXT NOT NULL ,"
         query_str += "birthday datetime NOT NULL,"
-        query_str += "email TEXT NOT NULL, "
-        query_str += "is_logged_in BOOLEAN);"
+        query_str += "email TEXT NOT NULL);"
 
         conn.execute(query_str)
         conn.commit()
@@ -29,8 +28,7 @@ class UsersDatabase:
 
     def insert_user(self, username, password, birthday, email):
         conn = sqlite3.connect(f'{self.__db_name}.db')
-        insert_query = "INSERT INTO users (username, password, birthday, email, is_logged_in) VALUES ( ?, ?, ?, ?, " \
-                       "TRUE); "
+        insert_query = "INSERT INTO users (username, password, birthday, email) VALUES ( ?, ?, ?, ?); "
         conn.execute(insert_query, (username, password, birthday, email,))
         conn.commit()
         conn.close()
@@ -101,16 +99,6 @@ class UsersDatabase:
         if result:
             return result[0]
         return None
-
-    def is_user_logged_in(self, username):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
-        select_query = "SELECT is_logged_in FROM users WHERE username = ?;"
-        c = conn.execute(select_query, (username,))
-        result = c.fetchone()
-        conn.close()
-        if result:
-            return not not (result[0])
-        return False
 
     def select_user_by_id(self, user_database_id):
         conn = sqlite3.connect(f'{self.__db_name}.db')

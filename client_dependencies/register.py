@@ -1,9 +1,10 @@
 import datetime
 import re
-import tkcalendar
 import tkinter
+import tkcalendar
 
-from ganeral_dependencies import protocol_digest, protocols
+from ganeral_dependencies import protocol_digest, protocol
+from ganeral_dependencies.global_functions import hash_password, to_json, int_to_bytes
 from ganeral_dependencies.global_values import *
 
 # Make a regular expression for validating an Email
@@ -29,10 +30,11 @@ def create_frame(register_frame, login_frame, email_validate_frame, server, key,
         login_frame.tkraise()
 
     def on_clear():
+        date_error.grid_forget()
+        email_error.grid_forget()
+        re_password_error.grid_forget()
         username_error.grid_forget()
         password_error.grid_forget()
-        re_password_error.grid_forget()
-        date_error.grid_forget()
         server_error.grid_forget()
 
         username_entry.delete(0, 'end')
@@ -73,11 +75,10 @@ def create_frame(register_frame, login_frame, email_validate_frame, server, key,
             send = False
             password_error.grid(row=9, column=0, columnspan=2)
         if send:
-            content = username.encode("utf-8") + bytes(USERNAME_MAX_LEN - len(username))
-            content += password.encode("utf-8") + bytes(PASSWORD_MAX_LEN - len(password))
-            content += birthday.year.to_bytes(2, "big") + bytes([birthday.month]) + bytes([birthday.day])
-            content += email.encode("utf-8")
-            packets = protocols.PacketMaker(REGISTER, key, content=content)
+            content = to_json(username.encode("utf-8"), hash_password(password).encode("utf-8"), email.encode("utf-8"),
+                              bytes([birthday.day]), bytes([birthday.month]), int_to_bytes(birthday.year))
+            print(content)
+            packets = protocol.PacketMaker(REGISTER, key, content=content)
             for packet in packets:
                 server.send(packet)
 

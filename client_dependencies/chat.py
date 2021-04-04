@@ -8,12 +8,13 @@ from tkinter.filedialog import askopenfilename
 
 from Crypto.PublicKey import RSA
 
-from ganeral_dependencies import protocol_digest, protocols, AES_crypto
+from ganeral_dependencies import protocol_digest, protocol, AES_crypto
 from ganeral_dependencies.AES_crypto import decrypt
 from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes
 from ganeral_dependencies.global_values import *
 
 FILE_BROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
+clickable_links = {}
 
 
 def explore(path):
@@ -45,7 +46,7 @@ class ProcessPackets(threading.Thread):
                         pow(bytes_to_int(self.user_values.group_key), self.user_values.rsa_group_key.e,
                             self.user_values.rsa_group_key.n))
                     content += encrypted_group_key
-                    packets = protocols.PacketMaker(SEND_GROUP_KEYS, content=content)
+                    packets = protocol.PacketMaker(SEND_GROUP_KEYS, content=content)
                     for packet in packets:
                         self.server.send(packet)
                     print("group_key: " + str(self.user_values.group_key))
@@ -65,32 +66,33 @@ class ProcessPackets(threading.Thread):
 
 
 def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
-    clickable_links = {}
 
     def group_info():
         pass
 
     def on_raise():
         root.title(f"sendme - {user_values.pin_code}")
-
+        root.config(menu=menu_bar)
         msg = f"{user_values.username} has entered the chat".encode("utf-8")
         list_box.insert(tkinter.END, msg)
         user_values.process_thread = ProcessPackets(server, user_values)
         user_values.process_thread.start()
         chat_frame.after(100, msg_listener)
         if user_values.group_key:
-            packets = protocols.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg)
+            packets = protocol.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg)
             for packet in packets:
                 server.send(packet)
 
     def leave_group():
-        user_values.pin_code = None
+        user_values.pin_code = 0
+        root.config(menu=None)
+        chat_picker_frame.tkraise()
 
     def on_send(*args):
         msg = f"<{user_values.username}>:" + chat_entry.get()
 
         list_box.insert(tkinter.END, msg)
-        packets = protocols.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg.encode("utf-8"))
+        packets = protocol.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg.encode("utf-8"))
         for packet in packets:
             server.send(packet)
         chat_entry.delete(0, "end")
@@ -98,8 +100,8 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
     def on_send_file():
         filepath = askopenfilename()
         if filepath:
-            packets = protocols.PacketMaker(SEND_IMG, shared_secrete=user_values.group_key,
-                                            username=user_values.username.encode("utf-8"), file_path=filepath)
+            packets = protocol.PacketMaker(SEND_IMG, shared_secrete=user_values.group_key,
+                                           username=user_values.username.encode("utf-8"), file_path=filepath)
             for packet in packets:
                 server.send(packet)
 
@@ -164,14 +166,13 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
             finally:
                 chat_frame.after(300, msg_listener)
 
-    # menubar = tkinter.Menu(chat_frame)
-    # filemenu = tkinter.Menu(menubar, tearoff=0)
-    # filemenu.add_command(label="grope info", command=group_info)
-    # filemenu.add_separator()
-    # filemenu.add_command(label="leave grope", command=leave_group)
-    # menubar.add_cascade(label="options", menu=filemenu)
+    menu_bar = tkinter.Menu(chat_frame)
+    file_menu = tkinter.Menu(menu_bar, tearoff=0)
+    file_menu.add_command(label="grope info", command=group_info)
+    file_menu.add_separator()
+    file_menu.add_command(label="leave grope", command=leave_group)
+    menu_bar.add_cascade(label="options", menu=file_menu)
 
-    # chat_frame.config(menu=menubar)
     user_values.on_chat_raise = on_raise
     chat_frame.grid_rowconfigure(0, weight=1)
     chat_frame.grid_columnconfigure(0, weight=9999)

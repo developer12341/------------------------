@@ -1,16 +1,15 @@
 import datetime
 import hashlib
 import json
-import struct
 import threading
 import uuid
 from base64 import b64decode
 
 from Crypto.Cipher import AES
 
-from ganeral_dependencies.global_functions import int_to_bytes, buffer_extractor, bytes_to_int
+from ganeral_dependencies.global_functions import int_to_bytes, buffer_extractor, from_json, bytes_to_int
 from ganeral_dependencies.global_values import *
-from ganeral_dependencies.protocols import PacketMaker
+from ganeral_dependencies.protocol import PacketMaker
 from server_dependencies import email_send
 
 
@@ -168,12 +167,11 @@ class RequestHandler(threading.Thread):
             register_details += packet[HEADER_SIZE:]
 
         register_details = self.decrypt(register_details)
-        username, password, year, month, day = struct.unpack(f"{USERNAME_MAX_LEN}s {PASSWORD_MAX_LEN}s 2s 1s 1s",
-                                                             register_details[:134])
+        username, password, email, day, month, year = from_json(register_details)
         birthday = datetime.date(bytes_to_int(year), month[0], day[0])
-        username = username.strip(b'\x00').decode("utf-8")
-        password = password.strip(b'\x00').decode("utf-8")
-        email = register_details[134:].strip(b'\x00').decode("utf-8")
+        username = username.decode("utf-8")
+        password = password.decode("utf-8")
+        email = email.decode("utf-8")
 
         if self.db_obj.does_user_exist(username):
             packets = PacketMaker(USERNAME_TAKEN, self.key)

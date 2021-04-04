@@ -5,7 +5,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 
 from ganeral_dependencies import protocol_digest
-from ganeral_dependencies import protocols, AES_crypto
+from ganeral_dependencies import protocol, AES_crypto
 from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies.protocol_digest import get_server_response
@@ -20,7 +20,7 @@ def create_frame(chat_picker_frame, chat_frame, user_values, server, key):
 
         rsa_key = RSA.generate(2048)
         content = pin_code.encode("utf-8") + b"pin_code_end" + rsa_key.public_key().export_key("PEM")
-        packets = protocols.PacketMaker(JOIN_CHAT, shared_secrete=key, content=content)
+        packets = protocol.PacketMaker(JOIN_CHAT, shared_secrete=key, content=content)
         for packet in packets:
             server.send(packet)
 
@@ -39,7 +39,7 @@ def create_frame(chat_picker_frame, chat_frame, user_values, server, key):
             pin_error.grid(row=3, column=0, sticky="N")
 
     def open_new_chat():
-        packets = protocols.PacketMaker(CREATE_CHAT)
+        packets = protocol.PacketMaker(CREATE_CHAT)
         for packet in packets:
             server.send(packet)
         server_response = server.recv(PACKET_SIZE)

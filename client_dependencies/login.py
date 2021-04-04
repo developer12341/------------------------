@@ -1,6 +1,7 @@
 import tkinter
 
-from ganeral_dependencies import protocols, protocol_digest
+from ganeral_dependencies import protocol, protocol_digest
+from ganeral_dependencies.global_functions import hash_password
 from ganeral_dependencies.global_values import *
 
 
@@ -13,8 +14,8 @@ def create_frame(login_frame, register_frame, chat_picker_frame, server, key, us
         password = password_entry.get()
         if username and password:
             content = username.encode("utf-8") + bytes(USERNAME_MAX_LEN - len(username))
-            content += password.encode("utf-8") + bytes(PASSWORD_MAX_LEN - len(password))
-            packets = protocols.PacketMaker(LOGIN, shared_secrete=key, content=content)
+            content += hash_password(password).encode("utf-8") + bytes(PASSWORD_MAX_LEN - len(password))
+            packets = protocol.PacketMaker(LOGIN, shared_secrete=key, content=content)
             for packet in packets:
                 server.send(packet)
 

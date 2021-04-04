@@ -1,5 +1,5 @@
 import tkinter
-from ganeral_dependencies.protocols import PacketMaker
+from ganeral_dependencies.protocol import PacketMaker
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies import protocol_digest
 

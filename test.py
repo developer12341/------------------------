@@ -1,17 +1,27 @@
-import os
-import subprocess
+# from tkinter import *
+# import webbrowser
+#
+#
+# def callback(url):
+#     webbrowser.open_new(url)
+#
+#
+# root = Tk()
+# link1 = Label(root, text="Google Hyperlink", fg="blue", cursor="hand2")
+# link1.pack()
+# link1.bind("<Button-1>", lambda e: callback("http://www.google.com"))
+#
+# link2 = Label(root, text="Ecosia Hyperlink", fg="blue", cursor="hand2")
+# link2.pack()
+# link2.bind("<Button-1>", lambda e: callback("http://www.ecosia.org"))
+#
+# root.mainloop()
+import datetime
+import json
+from base64 import b64decode, b64encode
 
-FILE_BROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
 
-
-def explore(path):
-    # explorer would choke on forward slashes
-    path = os.path.normpath(path)
-
-    if os.path.isdir(path):
-        subprocess.run([FILE_BROWSER_PATH, path])
-    elif os.path.isfile(path):
-        subprocess.run([FILE_BROWSER_PATH, '/select,', os.path.normpath(path)])
-
-
-explore("C:\\Users\\idodo\\Desktop\\ido_don_sendme_20-21\\files\\sample_img.jpeg")
+def date_from_string(string):
+    return datetime.datetime.strptime(string, '%y/%d/%m')
+today = str(datetime.date.today())
+print(date_from_string(today))

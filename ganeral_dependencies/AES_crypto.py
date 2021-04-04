@@ -25,7 +25,6 @@ def encrypt(data, DH_shared_KEY):
 def decrypt(json_input, bytes_key: bytes):
     if json_input:
         json_input = json_input.strip(b'\x00')
-        # try:
         b64 = json.loads(json_input)
         json_k = ['nonce', 'header', 'ciphertext', 'tag']
         jv = {k: b64decode(b64[k]) for k in json_k}
@@ -33,9 +32,6 @@ def decrypt(json_input, bytes_key: bytes):
         cipher.update(jv['header'])
         plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
         return plaintext
-        # except Exception as e:
-        #     print(json_input)
-        #     raise e
     return json_input
 
 
