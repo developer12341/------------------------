@@ -8,9 +8,9 @@ from Crypto.Random import get_random_bytes
 from ganeral_dependencies.global_functions import int_to_bytes
 
 
-def encrypt(data, DH_shared_KEY):
+def encrypt(data, bytes_key):
     header = get_random_bytes(8)
-    key = hashlib.sha256(int_to_bytes(DH_shared_KEY)).hexdigest().encode("utf-8")
+    key = hashlib.sha256(int_to_bytes(bytes_key)).hexdigest().encode("utf-8")
     nonce = get_random_bytes(16)
     cipher = AES.new(key, AES.MODE_SIV, nonce=nonce)
     cipher.update(header)

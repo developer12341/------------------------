@@ -36,13 +36,13 @@ def main(server, key):
 
     for frame in (start_frame, login_frame, register_frame, chat_picker_frame, chat_frame, email_validator_frame):
         frame.grid(row=0, column=0, sticky='news')
-    start_window.create_frame(start_frame, register_frame, login_frame)
 
+    start_window.create_frame(start_frame, register_frame, login_frame)
     register.create_frame(register_frame, login_frame, email_validator_frame, server, key, UserValues)
     login.create_frame(login_frame, register_frame, chat_picker_frame, server, key, UserValues)
     email_validator.create_frame(email_validator_frame, register_frame, UserValues, chat_picker_frame, server, key)
     chat_picker.create_frame(chat_picker_frame, chat_frame, UserValues, server, key)
     chat.create_frame(root, chat_frame, chat_picker_frame, UserValues, server, key)
 
-    register_frame.tkraise()
+    start_frame.tkraise()
     root.mainloop()

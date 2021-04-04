@@ -72,7 +72,7 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
 
     def on_raise():
         root.title(f"sendme - {user_values.pin_code}")
-        root.config(menu=menu_bar)
+        # root.config(menu=menu_bar)
         msg = f"{user_values.username} has entered the chat".encode("utf-8")
         list_box.insert(tkinter.END, msg)
         user_values.process_thread = ProcessPackets(server, user_values)

@@ -17,11 +17,11 @@
 #
 # root.mainloop()
 import datetime
-import json
-from base64 import b64decode, b64encode
 
 
 def date_from_string(string):
     return datetime.datetime.strptime(string, '%y/%d/%m')
+
+
 today = str(datetime.date.today())
 print(date_from_string(today))

@@ -32,7 +32,7 @@ def create_frame(email_validate_frame, register_frame, user_values, chat_picker_
         pin_code_error_label.grid_forget()
         pin_code_entry.delete(0, 'end')
 
-    tkinter.Label(email_validate_frame, text="Validate_email", font="arial 15").grid(row=0, column=0, columnspan=2,
+    tkinter.Label(email_validate_frame, text="Validate email", font="arial 15").grid(row=0, column=0, columnspan=2,
                                                                                      sticky="NEW")
 
     email_validate_frame.grid_columnconfigure(0, weight=2)
