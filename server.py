@@ -7,7 +7,7 @@ from server_dependencies import client_thread, sql_manager, server_enc
 
 # setting up the server
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((IP, PORT))
+server.bind(("0.0.0.0", PORT))
 server.listen()
 
 # setting up needed variables and objects

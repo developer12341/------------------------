@@ -29,18 +29,12 @@ def is_logged_in(packet):
     if packet_number >= packet_amount:
         raise Exception("this packets are invalid")
 
-    if request == REG_LOGIN_SUC:
+    if request in [REG_LOGIN_SUC, REG_LOGIN_FAIL, USER_LOGGED_IN]:
         if flag != SOMETHING_ELSE:
             # packet validity
             raise Exception(
                 "this packet's request doesn't match the flag \n request == REG_LOGIN_SUC\n flag != R_L_SUC")
-        return request, True
-    elif request == AUTHENTICATE_EMAIL:
-        if flag != SOMETHING_ELSE:
-            # packet validity
-            raise Exception(
-                "this packet's request doesn't match the flag \n request == REG_LOGIN_FAIL\n flag != R_L_FAIL")
-        return request, False
+        return request, request == REG_LOGIN_SUC
     else:
         # packet validity
         raise Exception("this packet isn't REG_LOGIN type, please check the server side for bugs")
