@@ -7,7 +7,6 @@ from base64 import b64encode, b64decode
 
 def from_json(json_input):
     if json_input:
-        print(json_input)
         json_input = json_input.strip(b'\x00')
         b64 = json.loads(json_input)
         json_k = ['username', 'password', 'email', "day", "month", 'year']

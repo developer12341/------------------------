@@ -77,7 +77,6 @@ def create_frame(register_frame, login_frame, email_validate_frame, server, key,
         if send:
             content = to_json(username.encode("utf-8"), hash_password(password).encode("utf-8"), email.encode("utf-8"),
                               bytes([birthday.day]), bytes([birthday.month]), int_to_bytes(birthday.year))
-            print(content)
             packets = protocol.PacketMaker(REGISTER, key, content=content)
             for packet in packets:
                 server.send(packet)
@@ -88,7 +87,6 @@ def create_frame(register_frame, login_frame, email_validate_frame, server, key,
                 user_values.username = username
                 email_validate_frame.tkraise()
             else:
-                print(error_msgs[reason])
                 server_error_var.set(error_msgs[reason])
                 server_error.grid(row=11, column=0, columnspan=2)
 

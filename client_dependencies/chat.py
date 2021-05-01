@@ -10,11 +10,74 @@ from Crypto.PublicKey import RSA
 
 from ganeral_dependencies import protocol_digest, protocol, AES_crypto
 from ganeral_dependencies.AES_crypto import decrypt
-from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes
+from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes, extract_file_name
 from ganeral_dependencies.global_values import *
+
+is_kaomoji_open = False
+
+
+class Kaomojies:
+
+    def __init__(self):
+        self.top = tkinter.Toplevel()
+        self.top.protocol("WM_DELETE_WINDOW", self.close)
+        self.top.minsize(150, 150)
+        self.top.grid_columnconfigure(0, weight=1)
+        self.top.grid_rowconfigure(0, weight=1)
+        self.list_box = tkinter.Listbox(self.top)
+        self.list_box.grid(row=0, column=0, sticky="NEWS")
+        self.list_box.configure(justify=tkinter.CENTER)
+        self.list_box.bind('<Double-1>', self.select_from_list_box)
+        for folder in kaomoji_folder_list:
+            self.list_box.insert(tkinter.END, folder)
+
+    def close(self):
+        global is_kaomoji_open
+        is_kaomoji_open = False
+        self.top.destroy()
+
+    def select_from_list_box(self, event):
+        global chat_entry
+
+        if self.list_box.get(0) != "go back":
+            courser = self.list_box.curselection()
+            # Updating label text to selected option
+            value = self.list_box.get(courser)
+            self.list_box.delete(0, tkinter.END)
+            self.list_box.insert(0, "go back")
+            k_file = open(".\\kaomoji\\" + value + "\\Kaomoji.k", "rb")
+            kaomojis = k_file.readlines()
+            for kaomoji in kaomojis:
+                self.list_box.insert(tkinter.END, kaomoji.decode("utf-8"))
+        else:
+            courser = self.list_box.curselection()
+            # Updating label text to selected option
+            value = self.list_box.get(courser)
+            if value == "go back":
+                self.list_box.delete(0, tkinter.END)
+                for folder in kaomoji_folder_list:
+                    self.list_box.insert(tkinter.END, folder)
+            else:
+                chat_entry.insert(tkinter.END, value.strip('\n') + " ")
+                self.close()
+
 
 FILE_BROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
 clickable_links = {}
+
+
+def about():
+    top = tkinter.Toplevel()
+    top.title("about us")
+    about_label = tkinter.Label(top, text="""
+Hello there!
+Sendme is a chat app designed with security in mind 
+to let you share your thoughts in private. 
+With the ability to start your own chat you can easily share messages,
+show feelings with kaomojis (^人^) and share files.
+I hope you will have the best time with us!
+    """)
+    about_label.pack()
 
 
 def explore(path):
@@ -28,9 +91,10 @@ def explore(path):
 
 
 class ProcessPackets(threading.Thread):
-    def __init__(self, server, user_values, parameters=None):
+    def __init__(self, server, user_values, key, parameters=None):
         self.request_queue = []
         self.server = server
+        self.key = key
         self.user_values = user_values
         self.parameters = parameters
         threading.Thread.__init__(self)
@@ -49,8 +113,6 @@ class ProcessPackets(threading.Thread):
                     packets = protocol.PacketMaker(SEND_GROUP_KEYS, content=content)
                     for packet in packets:
                         self.server.send(packet)
-                    print("group_key: " + str(self.user_values.group_key))
-                    print("sending user data")
                     del self.request_queue[0]
 
                 elif self.request_queue[0][0] in [SEND_FILE, SEND_IMG]:
@@ -59,23 +121,43 @@ class ProcessPackets(threading.Thread):
                     with open(".\\files\\" + file_name.decode("utf-8"), "wb") as file_:
                         file_.write(file_content)
                     del self.request_queue[0]
+                elif self.request_queue[0][0] == GET_GROUP_INFO:
+                    top = tkinter.Toplevel()
+                    top.title("group info")
+                    top.minsize(250, 250)
+                    group_users = decrypt(self.request_queue[0][1], self.key).decode("utf-8")
+                    about_label = tkinter.Label(top, text=f"""
+Group code - {self.user_values.pin_code}
+
+users
+{group_users}""")
+                    about_label.pack()
+                    del self.request_queue[0]
+
             time.sleep(0.05)
 
     def add_request(self, request):
         self.request_queue.append(request)
 
 
-def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
+def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values, server, key):
+    global chat_entry
+    root_menu_bar = menu_bar
 
     def group_info():
-        pass
+        packets = protocol.PacketMaker(GET_GROUP_INFO)
+        server.send(next(packets))
 
     def on_raise():
-        root.title(f"sendme - {user_values.pin_code}")
-        # root.config(menu=menu_bar)
+        main_root.title(f"sendme - {user_values.pin_code}")
+        file_menu = tkinter.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="grope info", command=group_info)
+        file_menu.add_separator()
+        file_menu.add_command(label="leave grope", command=leave_group)
+        menu_bar.add_cascade(label="options", menu=file_menu)
         msg = f"{user_values.username} has entered the chat".encode("utf-8")
         list_box.insert(tkinter.END, msg)
-        user_values.process_thread = ProcessPackets(server, user_values)
+        user_values.process_thread = ProcessPackets(server, user_values, key)
         user_values.process_thread.start()
         chat_frame.after(100, msg_listener)
         if user_values.group_key:
@@ -84,8 +166,18 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
                 server.send(packet)
 
     def leave_group():
+        main_root.title("sendme")
         user_values.pin_code = 0
-        root.config(menu=None)
+        root_menu_bar.delete(tkinter.END)
+        msg = f"{user_values.username} is leaving this chat"
+        packets = protocol.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg.encode("utf-8"))
+        for packet in packets:
+            server.send(packet)
+        packets = protocol.PacketMaker(LEAVE_CHAT)
+        server.send(next(packets))
+
+        chat_entry.delete(0, tkinter.END)
+        list_box.delete(0, tkinter.END)
         chat_picker_frame.tkraise()
 
     def on_send(*args):
@@ -100,19 +192,26 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
     def on_send_file():
         filepath = askopenfilename()
         if filepath:
-            packets = protocol.PacketMaker(SEND_IMG, shared_secrete=user_values.group_key,
+            request = SEND_FILE
+            file_format = extract_file_name(filepath).split(".")[-1]
+            if file_format.upper() in image_file_formats:
+                request = SEND_IMG
+            packets = protocol.PacketMaker(request, shared_secrete=user_values.group_key,
                                            username=user_values.username.encode("utf-8"), file_path=filepath)
             for packet in packets:
                 server.send(packet)
 
     def select_from_list_box(event):
-        pass
         courser = list_box.curselection()
-        # Updating label text to selected option
         value = list_box.get(courser)
-        print(value)
         if value in clickable_links:
             explore(clickable_links[value])
+
+    def kaomoji_popup():
+        global is_kaomoji_open
+        if not is_kaomoji_open:
+            is_kaomoji_open = True
+            Kaomojies()
 
     def msg_listener(*args):
         if user_values.pin_code:
@@ -136,7 +235,7 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
                     for packet in msg_queue:
                         msg += packet[HEADER_SIZE:]
                     msg = decrypt(msg, user_values.group_key)
-                    list_box.insert(tkinter.END, msg)
+                    list_box.insert(tkinter.END, msg.decode("utf-8"))
                 elif request in [SEND_FILE, SEND_IMG]:
                     username = b''
                     file_name = b''
@@ -166,24 +265,18 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
             finally:
                 chat_frame.after(300, msg_listener)
 
-    menu_bar = tkinter.Menu(chat_frame)
-    file_menu = tkinter.Menu(menu_bar, tearoff=0)
-    file_menu.add_command(label="grope info", command=group_info)
-    file_menu.add_separator()
-    file_menu.add_command(label="leave grope", command=leave_group)
-    menu_bar.add_cascade(label="options", menu=file_menu)
-
     user_values.on_chat_raise = on_raise
     chat_frame.grid_rowconfigure(0, weight=1)
     chat_frame.grid_columnconfigure(0, weight=9999)
     chat_frame.grid_columnconfigure(1, weight=1)
     chat_frame.grid_columnconfigure(2, weight=1)
+    chat_frame.grid_columnconfigure(3, weight=1)
 
     scrollbar = tkinter.Scrollbar(chat_frame)
-    scrollbar.grid(row=0, column=3, sticky="NSEW", padx=(0, 0))
+    scrollbar.grid(row=0, column=4, sticky="NSEW", padx=(0, 0))
 
     list_box = tkinter.Listbox(chat_frame, yscrollcommand=scrollbar.set)
-    list_box.grid(row=0, column=0, columnspan=3, sticky="NEWS")
+    list_box.grid(row=0, column=0, columnspan=4, sticky="NEWS")
 
     list_box.bind('<Double-1>', select_from_list_box)
     scrollbar.config(command=list_box.yview)
@@ -194,7 +287,10 @@ def create_frame(root, chat_frame, chat_picker_frame, user_values, server, key):
 
     tkinter.Button(chat_frame, text="+", font="arial 14", command=on_send_file).grid(row=1, column=1, sticky="NEWS")
 
-    tkinter.Button(chat_frame, text="send", font="arial 14", command=on_send).grid(row=1, column=2, columnspan=2,
+    tkinter.Button(chat_frame, text=";-)", font="arial 14", command=kaomoji_popup).grid(row=1, column=2,
+                                                                                        sticky="NEWS")
+
+    tkinter.Button(chat_frame, text="send", font="arial 14", command=on_send).grid(row=1, column=3, columnspan=2,
                                                                                    sticky="NEWS")
 
 

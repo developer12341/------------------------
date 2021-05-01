@@ -14,7 +14,7 @@ from server_dependencies import email_send
 
 
 class RequestHandler(threading.Thread):
-    def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, user_list):
+    def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, chat_id_name, user_list):
         self.client = client
         self.addr = addr
         self.key = hashlib.sha256(int_to_bytes(shared_secret)).hexdigest().encode("utf-8")
@@ -23,6 +23,7 @@ class RequestHandler(threading.Thread):
         self.user_list = user_list
         self.current_details = []
         self.chat_id_cli = chat_id_cli  # {chatId: [client,client...], ...}
+        self.chat_id_name = chat_id_name  # {chatId: [username,username...], ...}
         self.chat_id = None
         self.username = None
         self.keep_running = True
@@ -71,8 +72,8 @@ class RequestHandler(threading.Thread):
                 self.create_chat()
             elif request == GET_USERS:
                 self.get_users()
-            # elif request == GET_GROUP_KEY:
-            #     self.get_group_key()
+            elif request == GET_GROUP_INFO:
+                self.get_group_info()
             # elif request == REPLACE_KEYS:
             #     self.replace_keys()
             elif request == LEAVE_CHAT:
@@ -109,6 +110,7 @@ class RequestHandler(threading.Thread):
         chat_id = chat_id.encode("utf-8")
         print(chat_id)
         self.chat_id_cli[chat_id] = [self.client]
+        self.chat_id_name[chat_id] = [self.username]
         self.chat_id = chat_id
         packets = PacketMaker(JOIN_CHAT, self.key, content=chat_id)
         for packet in packets:
@@ -124,6 +126,7 @@ class RequestHandler(threading.Thread):
             # key_exchange
             packets = PacketMaker(GET_GROUP_KEY, content=cli_public_key)
             self.chat_id_cli[pin_code].append(self.client)
+            self.chat_id_name[pin_code].append(self.username)
             for packet in packets:
                 self.chat_id_cli[pin_code][0].send(packet)
             self.chat_id = pin_code
@@ -211,10 +214,21 @@ class RequestHandler(threading.Thread):
         pass
 
     def leave_chat(self):
-        # check if logged in
-        pass
+        del self.chat_id_cli[self.chat_id][self.chat_id_cli[self.chat_id].index(self.client)]
+        del self.chat_id_name[self.chat_id][self.chat_id_name[self.chat_id].index(self.username)]
+        if not self.chat_id_cli[self.chat_id]:
+            del self.chat_id_cli[self.chat_id]
+        if not self.chat_id_name[self.chat_id]:
+            del self.chat_id_name[self.chat_id]
+        self.chat_id = None
 
     def close_conn(self):
         if self.username:
             del self.user_list[self.user_list.index(self.username)]
         self.keep_running = False
+
+    def get_group_info(self):
+        content = "\n".join(self.chat_id_name[self.chat_id])
+        packets = PacketMaker(GET_GROUP_INFO, shared_secrete=self.key, content=content.encode("utf-8"))
+        for packet in packets:
+            self.client.send(packet)

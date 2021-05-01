@@ -78,8 +78,6 @@ def can_enter_chat(packet):
 
     # packet validity
     if packet_number >= packet_amount:
-        print("packet_number: " + str(packet_number))
-        print("packet_amount: " + str(packet_amount))
         raise Exception("this packets are invalid")
 
     if request == SEND_GROUP_KEYS:

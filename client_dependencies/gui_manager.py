@@ -1,3 +1,4 @@
+import tkinter
 import tkinter as tk
 from client_dependencies import start_window, register, login, email_validator, chat_picker, chat
 import time
@@ -9,6 +10,20 @@ class UserValues:
     group_key = None
     rsa_group_key = None
     my_key = None
+
+
+def about():
+    top = tkinter.Toplevel()
+    top.title("about us")
+    about_label = tkinter.Label(top, text="""
+Hello there!
+Sendme is a chat app designed with security in mind 
+to let you share your thoughts in private. 
+With the ability to start your own chat you can easily share messages,
+show feelings with kaomojis (^人^) and share files.
+I hope you will have the best time with us!
+    """)
+    about_label.pack()
 
 
 def main(server, key):
@@ -27,6 +42,11 @@ def main(server, key):
     root.rowconfigure(0, weight=1)
     root.protocol("WM_DELETE_WINDOW", close)
 
+    menu_bar = tkinter.Menu(root)
+    menu_bar.add_command(label="about us", command=about)
+
+    root.config(menu=menu_bar)
+
     start_frame = tk.Frame(root)
     login_frame = tk.Frame(root)
     register_frame = tk.Frame(root)
@@ -42,7 +62,7 @@ def main(server, key):
     login.create_frame(login_frame, register_frame, chat_picker_frame, server, key, UserValues)
     email_validator.create_frame(email_validator_frame, register_frame, UserValues, chat_picker_frame, server, key)
     chat_picker.create_frame(chat_picker_frame, chat_frame, UserValues, server, key)
-    chat.create_frame(root, chat_frame, chat_picker_frame, UserValues, server, key)
+    chat.create_frame(root, menu_bar, chat_frame, chat_picker_frame, UserValues, server, key)
 
     start_frame.tkraise()
     root.mainloop()

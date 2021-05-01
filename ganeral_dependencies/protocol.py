@@ -30,11 +30,10 @@ class PacketMaker:
                 raise Exception("you must have a file path to send a file!")
 
             # encrypt the file name and file itself
-            self.e_file_name = self.encrypt(extract_file_name(file_path))
+            self.e_file_name = self.encrypt(extract_file_name(file_path).encode("utf-8"))
             with open(file_path, "rb") as f:
                 self.content = f.read()
             # self.content = self.encrypt(content)
-            print("self.e_file_name: " + self.e_file_name)
             self.amount_info_packets += (len(self.e_file_name) // CONTENT_SIZE) + 1
 
         elif request == SEND_IMG:
@@ -100,7 +99,6 @@ class PacketMaker:
         if self.key:
             header = get_random_bytes(8)
             nonce = get_random_bytes(16)
-            # print(self.key)
             cipher = AES.new(self.key, AES.MODE_SIV, nonce=nonce)
             cipher.update(header)
             ciphertext, tag = cipher.encrypt_and_digest(data)

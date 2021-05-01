@@ -1,6 +1,7 @@
 import hashlib
 import pyDH
 import socket
+import sys
 
 from client_dependencies import gui_manager
 from ganeral_dependencies import global_values, protocol_digest
@@ -8,7 +9,12 @@ from ganeral_dependencies.global_functions import int_to_bytes, bytes_to_int
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-server.connect((global_values.IP, global_values.PORT))
+if len(sys.argv) == 2:
+    IP = sys.argv[1]
+else:
+    IP = "127.0.0.1"
+
+server.connect((IP, global_values.PORT))
 
 # key exchange
 parameters = pyDH.DiffieHellman()

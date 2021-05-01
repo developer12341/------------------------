@@ -1,4 +1,4 @@
-IP, NOTIFICATION_PORT, PORT = "127.0.0.1", 9999, 12345
+IP, PORT = "127.0.0.1", 12345
 
 # setting some contents
 LOGIN = b'\x01'
@@ -7,7 +7,7 @@ SEND_MSG = b'\x03'
 SEND_FILE = b'\x04'
 SEND_IMG = b'\x05'
 # SERVER_KEYS = b'\x06'
-# SEND_FRIEND_REQ = b'\x07'
+GET_GROUP_INFO = b'\x07'
 JOIN_CHAT = b'\x08'
 GET_USERS = b'\x09'
 CLOSE_CONN = b'\x0a'
@@ -47,3 +47,12 @@ PASSWORD_MIN_LEN = 5
 PASSWORD_MAX_LEN = 100
 USERNAME_MIN_LEN = 5
 USERNAME_MAX_LEN = 30
+
+
+image_file_formats = ["BMP", "EPS", "GIF", "ICNS", "ICO", "IM", "JPEG", "JPEG 2000", "MSP", "PCX", "PNG", "PPM", "SGI",
+                      "TGA", "TIFF"]
+kaomoji_folder_list = ['actions', 'anger', 'apologizing', 'bear', 'bird', 'cat', 'confusion', 'dissatisfaction', 'dog',
+                       'doubt', 'embarrassment', 'enemies', 'faces', 'fear', 'fish', 'food', 'friends', 'games',
+                       'greeting', 'hiding', 'hugging', 'indifference', 'joy', 'love', 'magic', 'music', 'neutral',
+                       'nosebleeding', 'pain', 'pig', 'rabbit', 'running', 'sadness', 'sleeping', 'spider', 'surprise',
+                       'sympathy', 'weapons', 'winking', 'writing']
