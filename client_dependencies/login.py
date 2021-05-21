@@ -5,7 +5,7 @@ from ganeral_dependencies.global_functions import hash_password
 from ganeral_dependencies.global_values import *
 
 
-def create_frame(login_frame, register_frame, chat_picker_frame, server, key, user_values):
+def create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, server, key, user_values):
     def register():
         register_frame.tkraise()
 
@@ -45,6 +45,9 @@ def create_frame(login_frame, register_frame, chat_picker_frame, server, key, us
         logged_in_error.grid_forget()
         length_error["fg"] = "black"
 
+    def on_reset():
+        reset_frame.tkraise()
+
     tkinter.Label(login_frame, text="log in", font="arial 15").grid(row=0, column=0, columnspan=2, sticky="NEW")
 
     login_frame.grid_columnconfigure(0, weight=1)
@@ -53,7 +56,9 @@ def create_frame(login_frame, register_frame, chat_picker_frame, server, key, us
     login_frame.grid_rowconfigure(0, weight=1)
     login_frame.grid_rowconfigure(1, weight=1)
     login_frame.grid_rowconfigure(2, weight=1)
+    login_frame.grid_rowconfigure(4, weight=1)
     login_frame.grid_rowconfigure(5, weight=1)
+    login_frame.grid_rowconfigure(6, weight=1)
     login_frame.grid_rowconfigure(7, weight=1)
     tkinter.Label(login_frame, text="username:", font=15).grid(row=1, column=0, sticky="E")
     username_entry = tkinter.Entry(login_frame, font=15)
@@ -69,13 +74,18 @@ def create_frame(login_frame, register_frame, chat_picker_frame, server, key, us
     server_error = tkinter.Label(login_frame, text="your username or password was incorrect", fg="red")
     logged_in_error = tkinter.Label(login_frame, text="you are already logged in on another computer", fg="red")
 
-    tkinter.Button(login_frame, text="send", font=15, command=on_submit).grid(row=5, column=0, sticky="E")
+    button_frame = tkinter.Frame(login_frame)
+    button_frame.grid(row=5, column=0, columnspan=2, sticky="NEWS")
+    for i in range(3):
+        button_frame.grid_columnconfigure(i, weight=1)
+    tkinter.Button(button_frame, text="send", font=15, command=on_submit).grid(row=0, column=0)
 
-    tkinter.Button(login_frame, text="clear", font=15, command=on_clear).grid(row=5, column=1)
+    tkinter.Button(button_frame, text="clear", font=15, command=on_clear).grid(row=0, column=1)
+
+    tkinter.Button(button_frame, text="reset password", font=15, command=on_reset).grid(row=0, column=2)
 
     tkinter.Label(login_frame, text="don't have a user?", font="arial 15").grid(row=6, column=0, columnspan=2)
     tkinter.Button(login_frame, text="register", font=15, command=register).grid(row=7, column=0, columnspan=2)
-    login_frame.bind("<Return>", on_submit)
 
 
 if __name__ == "__main__":

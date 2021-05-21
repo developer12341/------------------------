@@ -6,7 +6,7 @@ REGISTER = b'\x02'
 SEND_MSG = b'\x03'
 SEND_FILE = b'\x04'
 SEND_IMG = b'\x05'
-# SERVER_KEYS = b'\x06'
+ADD_CHAT = b'\x06'
 GET_GROUP_INFO = b'\x07'
 JOIN_CHAT = b'\x08'
 GET_USERS = b'\x09'
@@ -23,7 +23,7 @@ EMAIL_DOESNT_EXIST = b'\x13'
 SEND_PIN_CODE = b'\x14'
 CLIENT_KEYS = b'\x15'
 USERNAME_DOESNT_EXIST = b'\x16'
-# ACCEPT_FRIEND_REQ = b'\x17'
+RESET_PASSWORD = b'\x17'
 # NOTIFICATION_SETUP = b'\x18'
 CREATE_CHAT = b'\x19'
 CANT_JOIN_CHAT = b'\x1a'
@@ -48,11 +48,12 @@ PASSWORD_MAX_LEN = 100
 USERNAME_MIN_LEN = 5
 USERNAME_MAX_LEN = 30
 
-
 image_file_formats = ["BMP", "EPS", "GIF", "ICNS", "ICO", "IM", "JPEG", "JPEG 2000", "MSP", "PCX", "PNG", "PPM", "SGI",
                       "TGA", "TIFF"]
-kaomoji_folder_list = ['actions', 'anger', 'apologizing', 'bear', 'bird', 'cat', 'confusion', 'dissatisfaction', 'dog',
-                       'doubt', 'embarrassment', 'enemies', 'faces', 'fear', 'fish', 'food', 'friends', 'games',
-                       'greeting', 'hiding', 'hugging', 'indifference', 'joy', 'love', 'magic', 'music', 'neutral',
-                       'nosebleeding', 'pain', 'pig', 'rabbit', 'running', 'sadness', 'sleeping', 'spider', 'surprise',
-                       'sympathy', 'weapons', 'winking', 'writing']
+
+
+kaomoji_folder_list = ['anger', 'apologizing', 'bear', 'bird', 'cat', 'confusion', 'dissatisfaction', 'dog', 'doubt',
+                       'embarrassment', 'enemies', 'faces', 'fear', 'fish', 'food', 'friends', 'games', 'greeting',
+                       'hiding', 'hugging', 'indifference', 'joy', 'love', 'magic', 'music', 'nosebleeding', 'pain',
+                       'pig', 'rabbit', 'running', 'sadness', 'sleeping', 'spider', 'surprise', 'sympathy', 'weapons',
+                       'winking', 'writing']

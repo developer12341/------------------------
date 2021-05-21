@@ -23,6 +23,24 @@ def to_json(username, password, email, day, month, year):
     return result.encode("utf-8")
 
 
+def reset_password_to_json(username, email, password):
+    json_k = ['username', 'password', 'email']
+    json_v = [b64encode(x).decode('utf-8') for x in (username, password, email)]
+
+    result = json.dumps(dict(zip(json_k, json_v)))
+    return result.encode("utf-8")
+
+
+def reset_password_from_json(json_input):
+    if json_input:
+        json_input = json_input.strip(b'\x00')
+        b64 = json.loads(json_input)
+        json_k = ['username', 'password', 'email']
+        jv = {k: b64decode(b64[k]) for k in json_k}
+        return jv.values()
+    return json_input
+
+
 def int_to_bytes(x: int) -> bytes:
     return x.to_bytes((x.bit_length() + 7) // 8, 'big')
 

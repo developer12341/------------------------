@@ -7,7 +7,8 @@ from base64 import b64decode
 
 from Crypto.Cipher import AES
 
-from ganeral_dependencies.global_functions import int_to_bytes, buffer_extractor, from_json, bytes_to_int
+from ganeral_dependencies.global_functions import int_to_bytes, buffer_extractor, from_json, bytes_to_int, \
+    reset_password_from_json
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies.protocol import PacketMaker
 from server_dependencies import email_send
@@ -15,6 +16,8 @@ from server_dependencies import email_send
 
 class RequestHandler(threading.Thread):
     def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, chat_id_name, user_list):
+        self.password = ""
+        self.auth_for_change_password = False
         self.client = client
         self.addr = addr
         self.key = hashlib.sha256(int_to_bytes(shared_secret)).hexdigest().encode("utf-8")
@@ -70,12 +73,12 @@ class RequestHandler(threading.Thread):
                 self.join_chat()
             elif request == CREATE_CHAT:
                 self.create_chat()
-            elif request == GET_USERS:
-                self.get_users()
+            # elif request == GET_USERS:
+            #     self.get_users()
             elif request == GET_GROUP_INFO:
                 self.get_group_info()
-            # elif request == REPLACE_KEYS:
-            #     self.replace_keys()
+            elif request == RESET_PASSWORD:
+                self.reset_password()
             elif request == LEAVE_CHAT:
                 self.leave_chat()
             elif request == SEND_PIN_CODE:
@@ -200,18 +203,47 @@ class RequestHandler(threading.Thread):
         if self.id_check != pin_code:
             packets = PacketMaker(AUTHENTICATE_EMAIL, self.key)
         else:
-            self.user_list.append(self.current_details[0])
-            self.username = self.current_details[0]
-            packets = PacketMaker(REG_LOGIN_SUC, self.key)
-            self.db_obj.insert_user(*self.current_details)
+            if self.auth_for_change_password:
+                print("reset password")
+                self.db_obj.reset_password(self.password, self.username)
+                self.auth_for_change_password = False
+            else:
+                self.user_list.append(self.current_details[0])
+                self.username = self.current_details[0]
+                packets = PacketMaker(REG_LOGIN_SUC)
+                self.db_obj.insert_user(*self.current_details)
         self.client.send(next(packets))
 
     def get_users(self):
         # check if logged in
         pass
 
-    def replace_keys(self):
-        pass
+    def reset_password(self):
+
+        # check if the username and password is in the database
+        # if true then get them into the database and if false then
+        rename_details = b''
+        for packet in self.queue_requests:
+            rename_details += packet[HEADER_SIZE:]
+
+        rename_details = self.decrypt(rename_details)
+        username, password, email = reset_password_from_json(rename_details)
+        username = username.decode("utf-8")
+        password = password.decode("utf-8")
+        email = email.decode("utf-8")
+        if username in self.user_list:
+            packets = PacketMaker(USER_LOGGED_IN)
+            self.client.send(next(packets))
+        elif self.db_obj.does_user_email_exist(username, email):
+            self.password = password
+            self.username = username
+            self.auth_for_change_password = True
+            email_send.send_authentication_email(email)
+            packets = PacketMaker(AUTHENTICATE_EMAIL)
+            self.client.send(next(packets))
+        else:
+            packets = PacketMaker(REG_LOGIN_FAIL)
+            self.client.send(next(packets))
 
     def leave_chat(self):
         del self.chat_id_cli[self.chat_id][self.chat_id_cli[self.chat_id].index(self.client)]

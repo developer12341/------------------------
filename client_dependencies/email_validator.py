@@ -14,8 +14,7 @@ def create_frame(email_validate_frame, register_frame, user_values, chat_picker_
         if len(pin_code) == 6:
             content = pin_code.encode("utf-8")
             packets = PacketMaker(SEND_PIN_CODE, key, content=content)
-            pac = next(packets)
-            server.send(pac)
+            server.send(next(packets))
             server_response = server.recv(PACKET_SIZE)
             if protocol_digest.is_logged_in(server_response):
                 tkinter.Label(chat_picker_frame, text=f"hello {user_values.username}!", font="arial 23").grid(row=0,

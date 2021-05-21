@@ -1,6 +1,6 @@
+import os
 import sqlite3
 import time
-
 
 class UsersDatabase:
     """Creates database with users table includes:
@@ -9,8 +9,8 @@ class UsersDatabase:
        select query
     """
 
-    def __init__(self, db_name="data_base"):
-        conn = sqlite3.connect(f'{db_name}.db')
+    def __init__(self, db_name="userdata"):
+        conn = sqlite3.connect(os.getcwd() + "\\userdata.db")
         query_str = "CREATE TABLE IF NOT EXISTS users ("
         query_str += "userid INTEGER PRIMARY KEY AUTOINCREMENT ,"
         query_str += "username TEXT NOT NULL ,"
@@ -21,20 +21,20 @@ class UsersDatabase:
         conn.execute(query_str)
         conn.commit()
         conn.close()
-        self.__db_name = db_name
+        self.__db_path = os.getcwd() + f"\\{db_name}.db"
 
     def __str__(self):
         return "table name is users"
 
     def insert_user(self, username, password, birthday, email):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         insert_query = "INSERT INTO users (username, password, birthday, email) VALUES ( ?, ?, ?, ?); "
         conn.execute(insert_query, (username, password, birthday, email,))
         conn.commit()
         conn.close()
 
     def del_user(self, user_database_id):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         delete_query = "DELETE FROM users WHERE userid = ?;"
         conn.execute(delete_query, (user_database_id,))
         conn.commit()
@@ -45,7 +45,7 @@ class UsersDatabase:
         if not (username and password and birthday and email):
             return
 
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
 
         # change_query = 'UPDATE users SET username = ?, password = ? WHERE userid = ?;'
         values = []
@@ -74,15 +74,28 @@ class UsersDatabase:
         conn.close()
 
     def does_user_exist(self, username):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         select_query = "SELECT * from users where username = ?"
         c = conn.execute(select_query, (username,))
         result = c.fetchone()
         conn.close()
         return not not result
 
+    def does_user_email_exist(self, username, email):
+        conn = sqlite3.connect(f'{self.__db_path}.db')
+        select_query = "SELECT * FROM users WHERE username = ? AND email = ?;"
+        c = conn.execute(select_query, (username, email))
+        result = c.fetchone()
+        conn.close()
+        return result
+
+    def reset_password(self, password, username):
+        conn = sqlite3.connect(f'{self.__db_path}.db')
+        change_query = "UPDATE users SET password = ? WHERE username = ?"
+        conn.execute(change_query, (password, username))
+
     def does_email_exist(self, email):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         select_query = "SELECT * from users where email = ?"
         c = conn.execute(select_query, (email,))
         result = c.fetchone()
@@ -90,7 +103,7 @@ class UsersDatabase:
         return not not result
 
     def password_check(self, username, password):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         select_query = "SELECT userid FROM users WHERE username = ? AND password = ?"
         c = conn.execute(select_query, (username, password))
         result = c.fetchone()
@@ -101,7 +114,7 @@ class UsersDatabase:
         return None
 
     def select_user_by_id(self, user_database_id):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         select_query = "SELECT username, password from users where userid = ?"
         c = conn.execute(select_query, (user_database_id,))
         result = c.fetchone()
@@ -109,7 +122,7 @@ class UsersDatabase:
         return result
 
     def get_user_id(self, username):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         select_query = "SELECT userid FROM users WHERE username = ?;"
         c = conn.execute(select_query, (username,))
         result = c.fetchone()
@@ -120,7 +133,7 @@ class UsersDatabase:
         return None
 
     def select_all_users(self):
-        conn = sqlite3.connect(f'{self.__db_name}.db')
+        conn = sqlite3.connect(f'{self.__db_path}.db')
         select_query = f"SELECT * from users"
         c = conn.execute(select_query)
         result = c.fetchall()
@@ -129,6 +142,6 @@ class UsersDatabase:
 
 
 if __name__ == "__main__":
+    # print(os.getcwd() + "\\userdata.db")
     u = UsersDatabase("userdata")
-    user_id = u.password_check("idodon", "")
-    print(user_id)
+    print(u.does_user_email_exist("idodon123", "idodon2021@gmail.com"))
