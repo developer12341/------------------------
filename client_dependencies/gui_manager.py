@@ -1,6 +1,6 @@
 import tkinter
 import tkinter as tk
-from client_dependencies import start_window, register, login, email_validator, chat_picker, chat, reset_password
+from client_dependencies import start_window, register, login, email_validator, chat_picker, chat
 import time
 
 
@@ -8,6 +8,7 @@ class UserValues:
     username = ""
     pin_code = 0
     group_key = None
+    is_safe_chat = False
     rsa_group_key = None
     my_key = None
 
@@ -49,23 +50,20 @@ def main(server, key):
 
     start_frame = tk.Frame(root)
     login_frame = tk.Frame(root)
-    reset_frame = tk.Frame(root)
     register_frame = tk.Frame(root)
     email_validator_frame = tk.Frame(root)
     chat_picker_frame = tk.Frame(root)
     chat_frame = tk.Frame(root)
 
-    for frame in (start_frame, login_frame, register_frame, chat_picker_frame, chat_frame, email_validator_frame,
-                  reset_frame):
+    for frame in (start_frame, login_frame, register_frame, chat_picker_frame, chat_frame, email_validator_frame):
         frame.grid(row=0, column=0, sticky='news')
 
     start_window.create_frame(start_frame, register_frame, login_frame)
     register.create_frame(register_frame, login_frame, email_validator_frame, server, key, UserValues)
-    login.create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, server, key, UserValues)
+    login.create_frame(login_frame, register_frame, chat_picker_frame, server, key, UserValues)
     email_validator.create_frame(email_validator_frame, register_frame, UserValues, chat_picker_frame, server, key)
-    reset_password.create_frame(reset_frame, login_frame, email_validator_frame, UserValues,server, key)
     chat_picker.create_frame(chat_picker_frame, chat_frame, UserValues, server, key)
     chat.create_frame(root, menu_bar, chat_frame, chat_picker_frame, UserValues, server, key)
 
-    reset_frame.tkraise()
+    login_frame.tkraise()
     root.mainloop()

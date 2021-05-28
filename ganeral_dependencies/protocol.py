@@ -13,11 +13,11 @@ from ganeral_dependencies.global_values import *
 class PacketMaker:
     amount_info_packets: int
 
-    def __init__(self, request, shared_secrete=b'', content=None, file_path=None, username=None):
+    def __init__(self, request, shared_secret=b'', content=None, file_path=None, username=None):
         """
             preparing the packets for construction and the header
         """
-        self.key = shared_secrete
+        self.key = shared_secret
         self.amount_info_packets = 0
         self.amount_content_packets = 0
         self.content = content
@@ -156,6 +156,6 @@ if __name__ == "__main__":
     group_key = get_random_bytes(32)
     username = "idodon".encode("utf-8")
     filepath = "C:\\Users\\idodo\\Desktop\\ido_don_sendme_20-21\\ganeral_dependencies\\sample_img.jpeg"
-    packets = PacketMaker(SEND_IMG, file_path=filepath, shared_secrete=group_key, username=username)
+    packets = PacketMaker(SEND_IMG, file_path=filepath, shared_secret=group_key, username=username)
     for packet in packets:
         print(packet)

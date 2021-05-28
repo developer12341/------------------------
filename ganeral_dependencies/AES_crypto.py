@@ -53,6 +53,9 @@ def rsa_encrypt(data, public_key):
 
 
 def rsa_decrypt(json_input, private_key):
+    if not json_input:
+        return
+    json_input = json_input.strip(b'\x00')
     b64 = json.loads(json_input)
     json_k = ['enc_session_key', 'nonce', 'ciphertext', 'tag']
     jv = {k: b64decode(b64[k]) for k in json_k}

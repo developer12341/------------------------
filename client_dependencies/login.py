@@ -5,7 +5,7 @@ from ganeral_dependencies.global_functions import hash_password
 from ganeral_dependencies.global_values import *
 
 
-def create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, server, key, user_values):
+def create_frame(login_frame, register_frame, chat_picker_frame, server, key, user_values):
     def register():
         register_frame.tkraise()
 
@@ -15,7 +15,7 @@ def create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, se
         if username and password:
             content = username.encode("utf-8") + bytes(USERNAME_MAX_LEN - len(username))
             content += hash_password(password).encode("utf-8") + bytes(PASSWORD_MAX_LEN - len(password))
-            packets = protocol.PacketMaker(LOGIN, shared_secrete=key, content=content)
+            packets = protocol.PacketMaker(LOGIN, shared_secret=key, content=content)
             for packet in packets:
                 server.send(packet)
 
@@ -27,6 +27,7 @@ def create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, se
                                                                                                               column=0,
                                                                                                               columnspan=3,
                                                                                                               sticky="NWE")
+                user_values.on_raise_chat_picker()
                 chat_picker_frame.tkraise()
             else:
                 if request == REG_LOGIN_FAIL:
@@ -44,9 +45,6 @@ def create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, se
         server_error.grid_forget()
         logged_in_error.grid_forget()
         length_error["fg"] = "black"
-
-    def on_reset():
-        reset_frame.tkraise()
 
     tkinter.Label(login_frame, text="log in", font="arial 15").grid(row=0, column=0, columnspan=2, sticky="NEW")
 
@@ -76,13 +74,11 @@ def create_frame(login_frame, register_frame, chat_picker_frame, reset_frame, se
 
     button_frame = tkinter.Frame(login_frame)
     button_frame.grid(row=5, column=0, columnspan=2, sticky="NEWS")
-    for i in range(3):
+    for i in range(2):
         button_frame.grid_columnconfigure(i, weight=1)
     tkinter.Button(button_frame, text="send", font=15, command=on_submit).grid(row=0, column=0)
 
     tkinter.Button(button_frame, text="clear", font=15, command=on_clear).grid(row=0, column=1)
-
-    tkinter.Button(button_frame, text="reset password", font=15, command=on_reset).grid(row=0, column=2)
 
     tkinter.Label(login_frame, text="don't have a user?", font="arial 15").grid(row=6, column=0, columnspan=2)
     tkinter.Button(login_frame, text="register", font=15, command=register).grid(row=7, column=0, columnspan=2)
@@ -94,5 +90,5 @@ if __name__ == "__main__":
     login_frame.grid(row=0, column=0, sticky='news')
     root.minsize(500, 500)
     root.maxsize(1500, 1500)
-    create_frame(login_frame, None, None, None, None, None)
+    create_frame(login_frame, None, None, None, None, None, None)
     root.mainloop()

@@ -17,10 +17,12 @@ def create_frame(email_validate_frame, register_frame, user_values, chat_picker_
             server.send(next(packets))
             server_response = server.recv(PACKET_SIZE)
             if protocol_digest.is_logged_in(server_response):
-                tkinter.Label(chat_picker_frame, text=f"hello {user_values.username}!", font="arial 23").grid(row=0,
-                                                                                                              column=0,
-                                                                                                              columnspan=3,
-                                                                                                              sticky="NWE")
+                tkinter.Label(chat_picker_frame, text=f"hello {user_values.username}!",
+                              font="arial 23").grid(row=0,
+                                                    column=0,
+                                                    columnspan=3,
+                                                    sticky="NWE")
+                user_values.on_raise_chat_picker()
                 chat_picker_frame.tkraise()
             else:
                 pin_code_error_label.grid(row=2, column=0, columnspan=2, pady=(20, 0))

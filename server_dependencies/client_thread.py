@@ -5,6 +5,10 @@ import threading
 import uuid
 from base64 import b64decode
 
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+
+from ganeral_dependencies import AES_crypto
 from Crypto.Cipher import AES
 
 from ganeral_dependencies.global_functions import int_to_bytes, buffer_extractor, from_json, bytes_to_int, \
@@ -15,7 +19,10 @@ from server_dependencies import email_send
 
 
 class RequestHandler(threading.Thread):
-    def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, chat_id_name, user_list):
+    def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, chat_id_name, user_list,
+                 chat_name_chat_id: dict, server_values,public_chat_key):
+        self.chat_name = None
+        self.server_values = server_values
         self.password = ""
         self.auth_for_change_password = False
         self.client = client
@@ -25,6 +32,8 @@ class RequestHandler(threading.Thread):
         self.queue_requests = []
         self.user_list = user_list
         self.current_details = []
+        self.chat_name_chat_id = chat_name_chat_id  # {chat_name: chat_id e.g. chat_password}
+        self.public_chat_key = public_chat_key  # {chat_name: key} only for public chats
         self.chat_id_cli = chat_id_cli  # {chatId: [client,client...], ...}
         self.chat_id_name = chat_id_name  # {chatId: [username,username...], ...}
         self.chat_id = None
@@ -85,6 +94,12 @@ class RequestHandler(threading.Thread):
                 self.authenticate_email()
             elif request == SEND_GROUP_KEYS:
                 self.send_group_keys()
+            elif request == GET_CHATS:
+                self.get_chats()
+            elif request == JOIN_PASSWORD_LESS_CHAT:
+                self.join_password_less_chat()
+            elif request == CREATE_PUBLIC_CHAT:
+                self.create_public_chat()
             elif request == CLOSE_CONN:
                 self.close_conn()
                 return
@@ -108,26 +123,81 @@ class RequestHandler(threading.Thread):
     #             break
 
     def create_chat(self):
+        full_msg = self.queue_requests.pop()[HEADER_SIZE:]
+        is_password_protected = full_msg[0]
+        print(is_password_protected)
+        is_password_protected = bool(is_password_protected)
         chat_id = uuid.uuid4().bytes[:3]
         chat_id = chat_id.hex()
-        chat_id = chat_id.encode("utf-8")
+        chat_name = self.username + "'s private chat"
+        if is_password_protected:
+            chat_name += " (safe chat)"
         print(chat_id)
+        self.chat_name_chat_id[chat_name] = chat_id
         self.chat_id_cli[chat_id] = [self.client]
         self.chat_id_name[chat_id] = [self.username]
         self.chat_id = chat_id
-        packets = PacketMaker(JOIN_CHAT, self.key, content=chat_id)
+        content = chat_name.encode("utf-8") + b"~~~" + chat_id.encode("utf-8")
+        packets = PacketMaker(JOIN_CHAT, shared_secret=self.key, content=content)
         for packet in packets:
             self.client.send(packet)
 
+    def create_public_chat(self):
+        full_msg = b''
+        for packet in self.queue_requests:
+            full_msg += packet[HEADER_SIZE:]
+        full_msg = self.decrypt(full_msg)
+        print(full_msg)
+        rsa_key, swear_protection = full_msg[:-1], full_msg[-1]
+        chat_name = self.username + "'s public chat"
+        if bool(swear_protection):
+            chat_name += " (safe chat)"
+
+        self.chat_name_chat_id[chat_name] = None
+        self.chat_id_cli[chat_name] = [self.client]
+        self.chat_id_name[chat_name] = [self.username]
+        secret_key = get_random_bytes(32)
+        self.public_chat_key[chat_name] = secret_key
+        self.chat_id = chat_name
+        client_public_key = RSA.import_key(rsa_key.decode("utf-8"))
+        content = AES_crypto.rsa_encrypt(self.public_chat_key[chat_name], client_public_key)
+        packets = PacketMaker(GET_GROUP_KEY, content=content)
+        for packet in packets:
+            self.client.send(packet)
+        self.chat_id = chat_name
+
+    def join_password_less_chat(self):
+        full_msg = b''
+        for packet in self.queue_requests:
+            full_msg += packet[HEADER_SIZE:]
+        content = self.decrypt(full_msg)
+        content = json.loads(content.decode("utf-8"))
+        chat_name, rsa_key = content.values()
+        if chat_name in self.public_chat_key:
+            # key_exchange
+            client_public_key = RSA.import_key(rsa_key.encode("utf-8"))
+            content = AES_crypto.rsa_encrypt(self.public_chat_key[chat_name], client_public_key)
+            packets = PacketMaker(GET_GROUP_KEY, content=content)
+            self.chat_id_cli[chat_name].append(self.client)
+            self.chat_id_name[chat_name].append(self.username)
+            for packet in packets:
+                self.client.send(packet)
+            self.chat_id = chat_name
+        else:
+            packet = PacketMaker(CANT_JOIN_CHAT)
+            self.client.send(next(packet))
+
     def join_chat(self):
         # check if logged in
-        cli_public_key = b''
+        full_msg = b''
         for packet in self.queue_requests:
-            cli_public_key += packet[HEADER_SIZE:]
-        pin_code, cli_public_key = self.decrypt(cli_public_key.strip(b'\x00')).split(b'pin_code_end')
-        if pin_code in self.chat_id_cli:
+            full_msg += packet[HEADER_SIZE:]
+        full_msg = self.decrypt(full_msg)
+        content = json.loads(full_msg)
+        chat_name, pin_code, rsa_key = content.values()
+        if self.chat_name_chat_id[chat_name] == pin_code:
             # key_exchange
-            packets = PacketMaker(GET_GROUP_KEY, content=cli_public_key)
+            packets = PacketMaker(GET_GROUP_KEY, content=rsa_key.encode("utf-8"))
             self.chat_id_cli[pin_code].append(self.client)
             self.chat_id_name[pin_code].append(self.username)
             for packet in packets:
@@ -246,21 +316,43 @@ class RequestHandler(threading.Thread):
             self.client.send(next(packets))
 
     def leave_chat(self):
+        print(self.username + " left chat " + self.chat_name)
         del self.chat_id_cli[self.chat_id][self.chat_id_cli[self.chat_id].index(self.client)]
         del self.chat_id_name[self.chat_id][self.chat_id_name[self.chat_id].index(self.username)]
-        if not self.chat_id_cli[self.chat_id]:
-            del self.chat_id_cli[self.chat_id]
-        if not self.chat_id_name[self.chat_id]:
-            del self.chat_id_name[self.chat_id]
+        if self.chat_id not in self.public_chat_key:
+            if not self.chat_id_cli[self.chat_id]:
+                del self.chat_id_cli[self.chat_id]
+                for item in self.chat_name_chat_id:
+                    if self.chat_name_chat_id[item] == self.chat_id:
+                        del self.chat_name_chat_id[item]
+                        break
+            if not self.chat_id_name[self.chat_id]:
+                del self.chat_id_name[self.chat_id]
         self.chat_id = None
+        self.chat_name = None
 
     def close_conn(self):
+        if self.chat_id or self.chat_name:
+            self.leave_chat()
         if self.username:
-            del self.user_list[self.user_list.index(self.username)]
+            self.user_list.remove(self.username)
         self.keep_running = False
 
     def get_group_info(self):
         content = "\n".join(self.chat_id_name[self.chat_id])
-        packets = PacketMaker(GET_GROUP_INFO, shared_secrete=self.key, content=content.encode("utf-8"))
+        packets = PacketMaker(GET_GROUP_INFO, shared_secret=self.key, content=content.encode("utf-8"))
+        for packet in packets:
+            self.client.send(packet)
+
+    def get_chats(self):
+        chat_list = {}
+        for key, value in self.chat_name_chat_id.items():
+            if not value:
+                chat_list[key] = "public"
+            else:
+                chat_list[key] = "private"
+
+        content = json.dumps(chat_list)
+        packets = PacketMaker(GET_CHATS, content=content.encode("utf-8"), shared_secret=self.key)
         for packet in packets:
             self.client.send(packet)

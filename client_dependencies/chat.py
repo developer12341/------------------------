@@ -6,12 +6,27 @@ import time
 import tkinter
 from tkinter.filedialog import askopenfilename
 
+import pyperclip
 from Crypto.PublicKey import RSA
+import win32api
 
 from ganeral_dependencies import protocol_digest, protocol, AES_crypto
 from ganeral_dependencies.AES_crypto import decrypt
 from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes, extract_file_name
 from ganeral_dependencies.global_values import *
+
+with open(".\\client_dependencies\\swear words.txt", "r") as f:
+    swear_words = f.read().split("\n")
+
+
+def is_swear(sentence: str):
+    words = sentence.split()
+    for word in words:
+        word = word.lower()
+        if word in swear_words:
+            return True
+    return False
+
 
 is_kaomoji_open = False
 
@@ -97,6 +112,7 @@ class ProcessPackets(threading.Thread):
         self.key = key
         self.user_values = user_values
         self.parameters = parameters
+        self.top = None
         threading.Thread.__init__(self)
 
     def run(self):
@@ -123,6 +139,8 @@ class ProcessPackets(threading.Thread):
                     del self.request_queue[0]
                 elif self.request_queue[0][0] == GET_GROUP_INFO:
                     top = tkinter.Toplevel()
+                    self.top = top
+                    pyperclip.copy(self.user_values.pin_code)
                     top.title("group info")
                     top.minsize(250, 250)
                     group_users = decrypt(self.request_queue[0][1], self.key).decode("utf-8")
@@ -149,7 +167,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
         server.send(next(packets))
 
     def on_raise():
-        main_root.title(f"sendme - {user_values.pin_code}")
+        main_root.title(f"sendme - {user_values.chat_name}")
         file_menu = tkinter.Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="grope info", command=group_info)
         file_menu.add_separator()
@@ -161,7 +179,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
         user_values.process_thread.start()
         chat_frame.after(100, msg_listener)
         if user_values.group_key:
-            packets = protocol.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg)
+            packets = protocol.PacketMaker(SEND_MSG, shared_secret=user_values.group_key, content=msg)
             for packet in packets:
                 server.send(packet)
 
@@ -170,7 +188,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
         user_values.pin_code = 0
         root_menu_bar.delete(tkinter.END)
         msg = f"{user_values.username} is leaving this chat"
-        packets = protocol.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg.encode("utf-8"))
+        packets = protocol.PacketMaker(SEND_MSG, shared_secret=user_values.group_key, content=msg.encode("utf-8"))
         for packet in packets:
             server.send(packet)
         packets = protocol.PacketMaker(LEAVE_CHAT)
@@ -178,13 +196,22 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
 
         chat_entry.delete(0, tkinter.END)
         list_box.delete(0, tkinter.END)
+        user_values.on_raise_chat_picker()
         chat_picker_frame.tkraise()
 
     def on_send(*args):
-        msg = f"<{user_values.username}>:" + chat_entry.get()
+        msg = chat_entry.get()
+        if not msg:
+            return
+        if user_values.is_safe_chat:
+            if is_swear(msg):
+                win32api.MessageBox(0, "you can't swear in hear!", 'warning', 0x00001000)
+                return
+
+        msg = f"<{user_values.username}>:" + msg
 
         list_box.insert(tkinter.END, msg)
-        packets = protocol.PacketMaker(SEND_MSG, shared_secrete=user_values.group_key, content=msg.encode("utf-8"))
+        packets = protocol.PacketMaker(SEND_MSG, shared_secret=user_values.group_key, content=msg.encode("utf-8"))
         for packet in packets:
             server.send(packet)
         chat_entry.delete(0, "end")
@@ -196,7 +223,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
             file_format = extract_file_name(filepath).split(".")[-1]
             if file_format.upper() in image_file_formats:
                 request = SEND_IMG
-            packets = protocol.PacketMaker(request, shared_secrete=user_values.group_key,
+            packets = protocol.PacketMaker(request, shared_secret=user_values.group_key,
                                            username=user_values.username.encode("utf-8"), file_path=filepath)
             for packet in packets:
                 server.send(packet)
