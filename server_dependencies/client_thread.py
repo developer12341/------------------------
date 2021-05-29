@@ -125,7 +125,6 @@ class RequestHandler(threading.Thread):
     def create_chat(self):
         full_msg = self.queue_requests.pop()[HEADER_SIZE:]
         is_password_protected = full_msg[0]
-        print(is_password_protected)
         is_password_protected = bool(is_password_protected)
         chat_id = uuid.uuid4().bytes[:3]
         chat_id = chat_id.hex()
@@ -147,7 +146,6 @@ class RequestHandler(threading.Thread):
         for packet in self.queue_requests:
             full_msg += packet[HEADER_SIZE:]
         full_msg = self.decrypt(full_msg)
-        print(full_msg)
         rsa_key, swear_protection = full_msg[:-1], full_msg[-1]
         chat_name = self.username + "'s public chat"
         if bool(swear_protection):
@@ -183,6 +181,7 @@ class RequestHandler(threading.Thread):
             for packet in packets:
                 self.client.send(packet)
             self.chat_id = chat_name
+            self.chat_name = chat_name
         else:
             packet = PacketMaker(CANT_JOIN_CHAT)
             self.client.send(next(packet))
@@ -203,6 +202,7 @@ class RequestHandler(threading.Thread):
             for packet in packets:
                 self.chat_id_cli[pin_code][0].send(packet)
             self.chat_id = pin_code
+            self.chat_name = chat_name
         else:
             packet = PacketMaker(CANT_JOIN_CHAT)
             self.client.send(next(packet))
@@ -273,15 +273,10 @@ class RequestHandler(threading.Thread):
         if self.id_check != pin_code:
             packets = PacketMaker(AUTHENTICATE_EMAIL, self.key)
         else:
-            if self.auth_for_change_password:
-                print("reset password")
-                self.db_obj.reset_password(self.password, self.username)
-                self.auth_for_change_password = False
-            else:
-                self.user_list.append(self.current_details[0])
-                self.username = self.current_details[0]
-                packets = PacketMaker(REG_LOGIN_SUC)
-                self.db_obj.insert_user(*self.current_details)
+            self.user_list.append(self.current_details[0])
+            self.username = self.current_details[0]
+            packets = PacketMaker(REG_LOGIN_SUC)
+            self.db_obj.insert_user(*self.current_details)
         self.client.send(next(packets))
 
     def get_users(self):
@@ -316,7 +311,7 @@ class RequestHandler(threading.Thread):
             self.client.send(next(packets))
 
     def leave_chat(self):
-        print(self.username + " left chat " + self.chat_name)
+        print(self.username + " left chat " + str(self.chat_name))
         del self.chat_id_cli[self.chat_id][self.chat_id_cli[self.chat_id].index(self.client)]
         del self.chat_id_name[self.chat_id][self.chat_id_name[self.chat_id].index(self.username)]
         if self.chat_id not in self.public_chat_key:

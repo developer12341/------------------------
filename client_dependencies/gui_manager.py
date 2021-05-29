@@ -8,6 +8,7 @@ class UserValues:
     username = ""
     pin_code = 0
     group_key = None
+    chat_name = ""
     is_safe_chat = False
     rsa_group_key = None
     my_key = None
@@ -32,6 +33,7 @@ def main(server, key):
 
     def close():
         UserValues.pin_code = 0
+        UserValues.chat_name = ""
         time.sleep(0.3)
         root.destroy()
 
@@ -65,5 +67,5 @@ def main(server, key):
     chat_picker.create_frame(chat_picker_frame, chat_frame, UserValues, server, key)
     chat.create_frame(root, menu_bar, chat_frame, chat_picker_frame, UserValues, server, key)
 
-    login_frame.tkraise()
+    start_frame.tkraise()
     root.mainloop()

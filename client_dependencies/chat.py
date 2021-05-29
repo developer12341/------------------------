@@ -1,4 +1,5 @@
 import os
+import random
 import socket
 import subprocess
 import threading
@@ -116,7 +117,7 @@ class ProcessPackets(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        while self.user_values.pin_code:
+        while self.user_values.pin_code or self.user_values.chat_name:
             if self.request_queue:
                 if self.request_queue[0][0] == GET_GROUP_KEY:
                     client_public_key = RSA.import_key(self.request_queue[0][1].strip(b"\x00"))
@@ -137,18 +138,20 @@ class ProcessPackets(threading.Thread):
                     with open(".\\files\\" + file_name.decode("utf-8"), "wb") as file_:
                         file_.write(file_content)
                     del self.request_queue[0]
+
                 elif self.request_queue[0][0] == GET_GROUP_INFO:
                     top = tkinter.Toplevel()
                     self.top = top
-                    pyperclip.copy(self.user_values.pin_code)
                     top.title("group info")
                     top.minsize(250, 250)
                     group_users = decrypt(self.request_queue[0][1], self.key).decode("utf-8")
-                    about_label = tkinter.Label(top, text=f"""
-Group code - {self.user_values.pin_code}
-
-users
-{group_users}""")
+                    content = f"{self.user_values.chat_name}\n"
+                    if self.user_values.pin_code:
+                        pyperclip.copy(self.user_values.pin_code)
+                        content += f"\nGroup code - {self.user_values.pin_code}\n"
+                    content += "\nusers\n"
+                    content += group_users
+                    about_label = tkinter.Label(top, text=content)
                     about_label.pack()
                     del self.request_queue[0]
 
@@ -186,6 +189,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
     def leave_group():
         main_root.title("sendme")
         user_values.pin_code = 0
+        user_values.chat_name = ""
         root_menu_bar.delete(tkinter.END)
         msg = f"{user_values.username} is leaving this chat"
         packets = protocol.PacketMaker(SEND_MSG, shared_secret=user_values.group_key, content=msg.encode("utf-8"))
@@ -241,7 +245,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
             Kaomojies()
 
     def msg_listener(*args):
-        if user_values.pin_code:
+        if user_values.pin_code or user_values.chat_name:
             server.settimeout(0.001)
             try:
                 packet = server.recv(PACKET_SIZE)
@@ -256,7 +260,6 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                         packet = server.recv(PACKET_SIZE)
                         msg_queue.append(packet)
                 server.settimeout(None)
-
                 if request == SEND_MSG:
                     msg = b''
                     for packet in msg_queue:
@@ -281,12 +284,17 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                     list_box.insert(tkinter.END, username.decode("utf-8") + " sent a file")
                     file_path = os.getcwd() + "\\files"
                     clickable_links[username.decode("utf-8") + " sent a file"] = file_path
-
+                elif request == GET_GROUP_INFO:
+                    msg = b''
+                    for packet in msg_queue:
+                        msg += packet[HEADER_SIZE:]
+                    user_values.process_thread.add_request([request, msg])
                 else:
                     msg = b''
                     for packet in msg_queue:
                         msg += packet[HEADER_SIZE:]
                     user_values.process_thread.add_request([request, msg])
+
             except socket.timeout:
                 server.settimeout(None)
             finally:

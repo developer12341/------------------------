@@ -1,4 +1,5 @@
 import json
+import random
 import threading
 import time
 import tkinter
@@ -36,7 +37,6 @@ def create_frame(chat_picker_frame, chat_frame, user_values, server, key):
         continue_listening.clear()
         time.sleep(0.05)
         swear_protected = is_swear_protected.get()
-        print(swear_protected)
         packets = protocol.PacketMaker(CREATE_CHAT, content=int_to_bytes(swear_protected))
         for packet in packets:
             server.send(packet)
@@ -56,7 +56,6 @@ def create_frame(chat_picker_frame, chat_frame, user_values, server, key):
         user_values.pin_code = chat_id
         user_values.chat_name = chat_name
         user_values.is_safe_chat = bool(swear_protected)
-        print(user_values.is_safe_chat)
         user_values.on_chat_raise()
         stop_listening.set()
         chat_frame.tkraise()
