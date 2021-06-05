@@ -1,5 +1,4 @@
 import os
-import random
 import socket
 import subprocess
 import threading
@@ -8,8 +7,8 @@ import tkinter
 from tkinter.filedialog import askopenfilename
 
 import pyperclip
-from Crypto.PublicKey import RSA
 import win32api
+from Crypto.PublicKey import RSA
 
 from ganeral_dependencies import protocol_digest, protocol, AES_crypto
 from ganeral_dependencies.AES_crypto import decrypt
@@ -133,10 +132,12 @@ class ProcessPackets(threading.Thread):
                     del self.request_queue[0]
 
                 elif self.request_queue[0][0] in [SEND_FILE, SEND_IMG]:
+                    print("saving the file")
                     file_content = protocol_digest.decrypt(self.request_queue[0][1][1], self.user_values.group_key)
                     file_name = protocol_digest.decrypt(self.request_queue[0][1][0], self.user_values.group_key)
                     with open(".\\files\\" + file_name.decode("utf-8"), "wb") as file_:
                         file_.write(file_content)
+
                     del self.request_queue[0]
 
                 elif self.request_queue[0][0] == GET_GROUP_INFO:
@@ -224,11 +225,12 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
         print("send a pic")
         filepath = askopenfilename()
         if filepath:
+
             request = SEND_FILE
             file_format = extract_file_name(filepath).split(".")[-1]
             if file_format.upper() in image_file_formats:
                 request = SEND_IMG
-
+                print("its an img")
             packets = protocol.PacketMaker(request, shared_secret=user_values.group_key,
                                            username=user_values.username.encode("utf-8"), file_path=filepath)
             for packet in packets:
@@ -248,20 +250,25 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
 
     def msg_listener(*args):
         if user_values.pin_code or user_values.chat_name:
-            server.settimeout(0.001)
+            packet = b''
+            msg_queue = []
+            request, request_id, packet_amount, packet_number, flag = b'', b'', 0, 0, b''
+            server.settimeout(0.05)
+
             try:
                 packet = server.recv(PACKET_SIZE)
                 server.settimeout(None)
-                msg_queue = []
                 request, request_id, packet_amount, packet_number, flag = protocol_digest.buffer_extractor(
                     packet[:HEADER_SIZE])
                 msg_queue.append(packet)
-                server.settimeout(0.001)
                 if packet_amount - packet_number > 1:
-                    for _ in range(packet_amount - 1):
+                    for _ in range(packet_amount-1):
                         packet = server.recv(PACKET_SIZE)
                         msg_queue.append(packet)
-                server.settimeout(None)
+            except socket.timeout:
+                chat_frame.after(300, msg_listener)
+                return
+            finally:
                 if request == SEND_MSG:
                     msg = b''
                     for packet in msg_queue:
@@ -276,12 +283,16 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                     for packet in msg_queue:
                         request, request_id, packet_amount, packet_number, flag = protocol_digest.buffer_extractor(
                             packet[:HEADER_SIZE])
+
                         if flag == FILE_NAME_PACKET:
                             file_name += packet[HEADER_SIZE:]
-                        elif flag == CONTENT_PACKET:
+                        if flag == CONTENT_PACKET:
                             file_content += packet[HEADER_SIZE:]
-                        elif flag == USERNAME_PACKET:
+                        if flag == USERNAME_PACKET:
                             username += packet[HEADER_SIZE:]
+                    print("file_name: " + str(file_name))
+                    print("file_content: " + str(file_content[-7000:]))
+
                     user_values.process_thread.add_request([request, [file_name, file_content]])
                     username = decrypt(username, user_values.group_key)
                     list_box.insert(tkinter.END, username.decode("utf-8") + " sent a file")
@@ -292,15 +303,11 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                     for packet in msg_queue:
                         msg += packet[HEADER_SIZE:]
                     user_values.process_thread.add_request([request, msg])
-                else:
+                elif request:
                     msg = b''
                     for packet in msg_queue:
                         msg += packet[HEADER_SIZE:]
                     user_values.process_thread.add_request([request, msg])
-
-            except socket.timeout:
-                server.settimeout(None)
-            finally:
                 chat_frame.after(300, msg_listener)
 
     user_values.on_chat_raise = on_raise

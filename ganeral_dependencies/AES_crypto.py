@@ -23,16 +23,23 @@ def encrypt(data, bytes_key):
 
 
 def decrypt(json_input, bytes_key: bytes):
-    if json_input:
-        json_input = json_input.strip(b'\x00')
-        b64 = json.loads(json_input)
-        json_k = ['nonce', 'header', 'ciphertext', 'tag']
-        jv = {k: b64decode(b64[k]) for k in json_k}
-        cipher = AES.new(bytes_key, AES.MODE_SIV, nonce=jv['nonce'])
-        cipher.update(jv['header'])
-        plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
-        return plaintext
-    return json_input
+    try:
+        if json_input:
+            json_input = json_input.strip(b'\x00')
+            b64 = json.loads(json_input)
+            json_k = ['nonce', 'header', 'ciphertext', 'tag']
+            jv = {k: b64decode(b64[k]) for k in json_k}
+            cipher = AES.new(bytes_key, AES.MODE_SIV, nonce=jv['nonce'])
+            cipher.update(jv['header'])
+            plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
+            return plaintext
+        return json_input
+    except json.decoder.JSONDecodeError as e:
+        print("json_input: " + str(json_input))
+        print("json_input len: " + str(len(json_input)))
+        print("bytes_key: " + str(bytes_key))
+        print("error")
+        raise e
 
 
 def rsa_encrypt(data, public_key):

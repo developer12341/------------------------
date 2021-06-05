@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from base64 import b64encode
 from typing import Any, Union
@@ -6,6 +7,8 @@ from typing import Any, Union
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
+from ganeral_dependencies import protocol_digest
+from ganeral_dependencies.AES_crypto import decrypt
 from ganeral_dependencies.global_functions import extract_file_name
 from ganeral_dependencies.global_values import *
 
@@ -155,7 +158,35 @@ class PacketMaker:
 if __name__ == "__main__":
     group_key = get_random_bytes(32)
     username = "idodon".encode("utf-8")
-    filepath = "C:\\Users\\idodo\\Desktop\\ido_don_sendme_20-21\\ganeral_dependencies\\sample_img.jpeg"
-    packets = PacketMaker(SEND_IMG, file_path=filepath, shared_secret=group_key, username=username)
+    filepath = os.getcwd() + "\\sample_img.jpeg"
+    packets = PacketMaker(SEND_FILE, file_path=filepath, shared_secret=group_key, username=username)
+    msg_queue = []
     for packet in packets:
         print(packet)
+        msg_queue.append(packet)
+
+    username = b''
+    file_name = b''
+    file_content = b''
+    for packet in msg_queue:
+        request, request_id, packet_amount, packet_number, flag = protocol_digest.buffer_extractor(
+            packet[:HEADER_SIZE])
+
+        if flag == FILE_NAME_PACKET:
+            file_name += packet[HEADER_SIZE:]
+        if flag == CONTENT_PACKET:
+            file_content += packet[HEADER_SIZE:]
+        if flag == USERNAME_PACKET:
+            username += packet[HEADER_SIZE:]
+    print("username: " + str(username.strip(b'\x00')))
+    print("file_name: " + str(file_name.strip(b'\x00')))
+    print("file_content: " + str(file_content.strip(b'\x00')))
+
+    username = decrypt(username, group_key)
+    print(username)
+
+    username = decrypt(file_name, group_key)
+    print(username)
+
+    username = decrypt(file_content, group_key)
+    print(username)
