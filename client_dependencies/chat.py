@@ -221,12 +221,14 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
         chat_entry.delete(0, "end")
 
     def on_send_file():
+        print("send a pic")
         filepath = askopenfilename()
         if filepath:
             request = SEND_FILE
             file_format = extract_file_name(filepath).split(".")[-1]
             if file_format.upper() in image_file_formats:
                 request = SEND_IMG
+
             packets = protocol.PacketMaker(request, shared_secret=user_values.group_key,
                                            username=user_values.username.encode("utf-8"), file_path=filepath)
             for packet in packets:
@@ -267,6 +269,7 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                     msg = decrypt(msg, user_values.group_key)
                     list_box.insert(tkinter.END, msg.decode("utf-8"))
                 elif request in [SEND_FILE, SEND_IMG]:
+                    print("got a pic")
                     username = b''
                     file_name = b''
                     file_content = b''

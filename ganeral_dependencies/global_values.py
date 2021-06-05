@@ -32,6 +32,7 @@ SEND_GROUP_KEYS = b'\x1c'
 JOIN_PASSWORD_LESS_CHAT = b'\x1d'
 USER_LOGGED_IN = b'\x1e'
 CREATE_PUBLIC_CHAT = b'\x1f'
+
 # flags - to check packet validity and to let the receiver know for sure what this packet is
 CONTENT_PACKET = b'\x01'
 FILE_NAME_PACKET = b'\x02'
