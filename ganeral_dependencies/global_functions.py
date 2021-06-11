@@ -49,6 +49,21 @@ def bytes_to_int(bytes_obj: bytes) -> int:
     return int.from_bytes(bytes_obj, 'big')
 
 
+# def binery_search_closest(list1:list, number:int):
+#     list1
+#
+
+def merge_int_lists(list1: list, list2: list) -> list:
+    list1.sort()
+    for item in list2:
+        if item not in list1:
+            index = binary_search(list1, 0, len(arr) - 1, item)
+            if index == len(list1):
+                list1.append(item)
+            else:
+                list1[index] = item
+
+
 def hash_key(key):
     return hashlib.sha256(int_to_bytes(key)).hexdigest().encode("utf-8")
 
@@ -67,3 +82,39 @@ def extract_file_name(path):
 def buffer_extractor(buffer):
     request, request_id, packet_amount, packet_number, flag = struct.unpack("1s 8s 3s 3s 1s", buffer)
     return request, request_id, bytes_to_int(packet_amount), bytes_to_int(packet_number), flag
+
+
+# Python 3 program for recursive binary search.
+# Modifications needed for the older Python 2 are found in comments.
+
+# Returns index of x in arr if present, else -1
+def binary_search(arr, low, high, x):
+    # Check base case
+    if high >= low:
+
+        mid = (high + low) // 2
+
+        # If element is present at the middle itself
+        if arr[mid] == x:
+            return mid
+
+        # If element is smaller than mid, then it can only
+        # be present in left subarray
+        elif arr[mid] > x:
+            return binary_search(arr, low, mid - 1, x)
+
+        # Else the element can only be present in right subarray
+        else:
+            return binary_search(arr, mid + 1, high, x)
+
+    else:
+        # Element is not present in the array
+        return low
+
+
+if __name__ == "__main__":
+    # Test array
+    arr = [2, 3, 4, 10, 40]
+    arr2 = [4, 5, 80]
+    merge_int_lists(arr, arr2)
+    print(arr)

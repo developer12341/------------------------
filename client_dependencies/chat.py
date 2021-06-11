@@ -14,7 +14,7 @@ import win32api
 
 from ganeral_dependencies import protocol_digest, protocol, AES_crypto
 from ganeral_dependencies.AES_crypto import decrypt
-from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes, extract_file_name
+from ganeral_dependencies.global_functions import bytes_to_int, int_to_bytes, extract_file_name, buffer_extractor
 from ganeral_dependencies.global_values import *
 
 with open(".\\client_dependencies\\swear words.txt", "r") as f:
@@ -268,12 +268,39 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                 request, request_id, packet_amount, packet_number, flag = protocol_digest.buffer_extractor(
                     packet[:HEADER_SIZE])
                 msg_queue.append(packet)
-                server.settimeout(0.04)
+                server.settimeout(1)
                 if packet_amount - packet_number > 1:
                     for _ in range(packet_amount - 1):
                         packet = server.recv(PACKET_SIZE)
                         msg_queue.append(packet)
                 server.settimeout(None)
+
+                # need to check packet validity
+                if packet_amount - len(msg_queue):
+                    print("fuck, something went wrong")
+                    # not every packet was sent for some reason
+                    s = list(range(packet_amount))
+                    for packet in msg_queue:
+                        request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+                        s.remove(packet_number)
+                    print(s)
+                    content = request_id + b"," + " ".join(s).encode("utf-8")
+                    packets = protocol.PacketMaker(RESEND_PACKETS, content=content, shared_secret=key)
+                    for packet in packets:
+                        print(packet)
+                        server.send(packet)
+
+                    packet = server.recv(PACKET_SIZE)
+                    request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+                    msg_queue.insert(packet_number, packet)
+                    if packet_amount > 1:
+                        for _ in range(packet_amount - packet_number - 1):
+                            packet = self.client.recv(PACKET_SIZE)
+                            self.queue_requests.insert(packet_number, packet)
+
+
+
+
                 if request == SEND_MSG:
                     msg = b''
                     for packet in msg_queue:

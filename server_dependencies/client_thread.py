@@ -12,7 +12,7 @@ from ganeral_dependencies import AES_crypto
 from Crypto.Cipher import AES
 
 from ganeral_dependencies.global_functions import int_to_bytes, buffer_extractor, from_json, bytes_to_int, \
-    reset_password_from_json
+    reset_password_from_json, merge_int_lists
 from ganeral_dependencies.global_values import *
 from ganeral_dependencies.protocol import PacketMaker
 from server_dependencies import email_send
@@ -69,21 +69,36 @@ class RequestHandler(threading.Thread):
                 return
             request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
             self.queue_requests.append(packet)
+            bad_packets_list = []
+            if len(packet) != 1024:
+                request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+                bad_packets_list.append(packet_number)
             if packet_amount > 1:
                 for _ in range(packet_amount - packet_number - 1):
                     packet = self.client.recv(PACKET_SIZE)
+                    if len(packet) != 1024:
+                        request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+                        bad_packets_list.append(packet_number)
                     self.queue_requests.append(packet)
 
             # need to check packet validity
+
             if packet_amount - len(self.queue_requests):
                 print("fuck, something went wrong")
                 # not every packet was sent for some reason
-                s = list(range(packet_amount - packet_number))
+                packets_not_arrived = list(range(packet_amount))
+                print(packets_not_arrived)
                 for packet in self.queue_requests:
                     request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
-                    s.remove(packet_number)
-                print(s)
-                content = request_id + b"," + " ".join(s).encode("utf-8")
+                    packets_not_arrived.remove(packet_number)
+                    print(str(packet_number) + " has arrived safely")
+                bad_packets_list = merge_int_lists(bad_packets_list, packets_not_arrived)
+
+            print(packets_not_arrived)
+
+            if bad_packets_list:
+                bad_packets_list = list(map(lambda number: str(number), bad_packets_list))
+                content = request_id + b"," + " ".join(bad_packets_list).encode("utf-8")
                 packets = PacketMaker(RESEND_PACKETS, content=content, shared_secret=self.key)
                 for packet in packets:
                     print(packet)
