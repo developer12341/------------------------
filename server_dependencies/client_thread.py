@@ -20,7 +20,7 @@ from server_dependencies import email_send
 
 class RequestHandler(threading.Thread):
     def __init__(self, client, addr, shared_secret, db_obj, chat_id_cli, chat_id_name, user_list,
-                 chat_name_chat_id: dict, server_values,public_chat_key):
+                 chat_name_chat_id: dict, server_values, public_chat_key):
         self.chat_name = None
         self.server_values = server_values
         self.password = ""
@@ -70,19 +70,45 @@ class RequestHandler(threading.Thread):
             request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
             self.queue_requests.append(packet)
             if packet_amount > 1:
-                for _ in range(packet_amount - 1):
+                for _ in range(packet_amount - packet_number - 1):
                     packet = self.client.recv(PACKET_SIZE)
                     self.queue_requests.append(packet)
 
             # need to check packet validity
+            if packet_amount - len(self.queue_requests):
+                print("fuck, something went wrong")
+                # not every packet was sent for some reason
+                s = list(range(packet_amount - packet_number))
+                for packet in self.queue_requests:
+                    request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+                    s.remove(packet_number)
+                print(s)
+                content = request_id + b"," + " ".join(s).encode("utf-8")
+                packets = PacketMaker(RESEND_PACKETS, content=content, shared_secret=self.key)
+                for packet in packets:
+                    print(packet)
+                    self.client.send(packet)
+
+                packet = self.client.recv(PACKET_SIZE)
+                if packet == b'':
+                    self.close_conn()
+                    return
+                request, request_id, packet_amount, packet_number, flag = buffer_extractor(packet[:HEADER_SIZE])
+                self.queue_requests.insert(packet_number, packet)
+                if packet_amount > 1:
+                    for _ in range(packet_amount - packet_number - 1):
+                        packet = self.client.recv(PACKET_SIZE)
+                        self.queue_requests.insert(packet_number, packet)
 
             # sort by request
             if request == SEND_IMG or request == SEND_FILE or request == SEND_MSG:
                 print(packet_amount - len(self.queue_requests))
                 if request == SEND_FILE or request == SEND_IMG:
                     print("sending file/img " + str(packet_amount - len(self.queue_requests)))
+                    packets = PacketMaker(SENDING_COMPLITED, content=request_id, shared_secret=self.key)
+                    for packet in packets:
+                        self.client.send(packet)
                     # s = b''.join(self.queue_requests)
-
                 self.broadcast_packets()
             elif request == LOGIN:
                 self.login()

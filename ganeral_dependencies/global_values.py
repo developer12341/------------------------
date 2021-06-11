@@ -32,6 +32,42 @@ SEND_GROUP_KEYS = b'\x1c'
 JOIN_PASSWORD_LESS_CHAT = b'\x1d'
 USER_LOGGED_IN = b'\x1e'
 CREATE_PUBLIC_CHAT = b'\x1f'
+RESEND_PACKETS = b'\x20'
+SENDING_COMPLITED = b'\x21'
+bytes_to_requst = {
+    b'\x01': "LOGIN",
+    b'\x02': "REGISTER",
+    b'\x03': "SEND_MSG",
+    b'\x04': "SEND_FILE",
+    b'\x05': "SEND_IMG",
+    b'\x06': "ADD_CHAT",
+    b'\x07': "GET_GROUP_INFO",
+    b'\x08': "JOIN_CHAT",
+    b'\x09': "GET_USERS",
+    b'\x0a': "CLOSE_CONN",
+    b'\x0b': "LEAVE_CHAT",
+    b'\x0c': "REG_LOGIN_SUC",
+    b'\x0d': "REG_LOGIN_FAIL",
+    b'\x0e': "GET_GROUP_KEY",
+    b'\x0f': "FORGOT_MY_PASSWORD",
+    b'\x10': "AUTHENTICATE_EMAIL",
+    b'\x11': "USERNAME_TAKEN",
+    b'\x12': "EMAIL_TAKEN",
+    b'\x13': "EMAIL_DOESNT_EXIST",
+    b'\x14': "SEND_PIN_CODE",
+    b'\x15': "CLIENT_KEYS",
+    b'\x16': "USERNAME_DOESNT_EXIST",
+    b'\x17': "RESET_PASSWORD",
+    b'\x18': "GET_CHATS",
+    b'\x19': "CREATE_CHAT",
+    b'\x1a': "CANT_JOIN_CHAT",
+    b'\x1b': "END_SESSION",
+    b'\x1c': "SEND_GROUP_KEYS",
+    b'\x1d': "JOIN_PASSWORD_LESS_CHAT",
+    b'\x1e': "USER_LOGGED_IN",
+    b'\x1f': "CREATE_PUBLIC_CHAT",
+    b'\x20': "RESEND_PACKETS"
+}
 
 # flags - to check packet validity and to let the receiver know for sure what this packet is
 CONTENT_PACKET = b'\x01'
@@ -51,7 +87,6 @@ USERNAME_MAX_LEN = 30
 
 image_file_formats = ["BMP", "EPS", "GIF", "ICNS", "ICO", "IM", "JPEG", "JPEG 2000", "MSP", "PCX", "PNG", "PPM", "SGI",
                       "TGA", "TIFF"]
-
 
 kaomoji_folder_list = ['anger', 'apologizing', 'bear', 'bird', 'cat', 'confusion', 'dissatisfaction', 'dog', 'doubt',
                        'embarrassment', 'enemies', 'faces', 'fear', 'fish', 'food', 'friends', 'games', 'greeting',

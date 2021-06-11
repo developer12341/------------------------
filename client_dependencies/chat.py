@@ -31,6 +31,7 @@ def is_swear(sentence: str):
 
 
 is_kaomoji_open = False
+file_packet_list = dict()
 
 
 class Kaomojies:
@@ -157,6 +158,7 @@ class ProcessPackets(threading.Thread):
                     del self.request_queue[0]
                 else:
                     print("no requestes")
+                    print("request - " + bytes_to_requst[self.request_queue[0]])
             time.sleep(0.05)
 
     def add_request(self, request):
@@ -239,10 +241,10 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
             packets = protocol.PacketMaker(request, shared_secret=user_values.group_key,
                                            username=user_values.username.encode("utf-8"), file_path=filepath)
             print("starting to send file")
+            file_packet_list[packets.id] = packets
             for packet in packets:
                 server.send(packet)
             print("sending complete")
-
 
     def select_from_list_box(event):
         courser = list_box.curselection()
@@ -297,6 +299,22 @@ def create_frame(main_root, menu_bar, chat_frame, chat_picker_frame, user_values
                     list_box.insert(tkinter.END, username.decode("utf-8") + " sent a file")
                     file_path = os.getcwd() + "\\files"
                     clickable_links[username.decode("utf-8") + " sent a file"] = file_path
+                elif request == SENDING_COMPLITED:
+                    msg = b''
+                    for packet in msg_queue:
+                        msg += packet[HEADER_SIZE:]
+                    this_request_id = decrypt(msg, key)
+                    del file_packet_list[this_request_id]
+                elif request == RESEND_PACKETS:
+                    msg = b''
+                    for packet in msg_queue:
+                        msg += packet[HEADER_SIZE:]
+                    this_request_id, item_list = decrypt(msg, key)
+                    item_list = item_list.split(" ")
+                    for number in item_list:
+                        packet = file_packet_list[this_request_id].index(number)
+                        server.send(packet)
+
                 elif request == GET_GROUP_INFO:
                     msg = b''
                     for packet in msg_queue:
