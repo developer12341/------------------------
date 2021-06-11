@@ -43,17 +43,22 @@ class RequestHandler(threading.Thread):
         threading.Thread.__init__(self)
 
     def decrypt(self, json_input):
-        if json_input:
-            json_input = json_input.strip(b'\x00')
-            b64 = json.loads(json_input)
-            json_k = ['nonce', 'header', 'ciphertext', 'tag']
-            jv = {k: b64decode(b64[k]) for k in json_k}
-            cipher = AES.new(self.key, AES.MODE_SIV, nonce=jv['nonce'])
-            cipher.update(jv['header'])
-            plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
-            return plaintext
-        else:
+        try:
+            if json_input:
+                json_input = json_input.strip(b'\x00')
+                b64 = json.loads(json_input)
+                json_k = ['nonce', 'header', 'ciphertext', 'tag']
+                jv = {k: b64decode(b64[k]) for k in json_k}
+                cipher = AES.new(self.key, AES.MODE_SIV, nonce=jv['nonce'])
+                cipher.update(jv['header'])
+                plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
+                return plaintext
             return json_input
+        except json.decoder.JSONDecodeError as e:
+            print("json_input: " + str(json_input))
+            print("json_input len: " + str(len(json_input)))
+            print("error")
+            raise e
 
     def run(self):
         while self.keep_running:
@@ -73,6 +78,11 @@ class RequestHandler(threading.Thread):
 
             # sort by request
             if request == SEND_IMG or request == SEND_FILE or request == SEND_MSG:
+                print(packet_amount - len(self.queue_requests))
+                if request == SEND_FILE or request == SEND_IMG:
+                    print("sending file/img " + str(packet_amount - len(self.queue_requests)))
+                    # s = b''.join(self.queue_requests)
+
                 self.broadcast_packets()
             elif request == LOGIN:
                 self.login()
@@ -168,6 +178,7 @@ class RequestHandler(threading.Thread):
         full_msg = b''
         for packet in self.queue_requests:
             full_msg += packet[HEADER_SIZE:]
+
         content = self.decrypt(full_msg)
         content = json.loads(content.decode("utf-8"))
         chat_name, rsa_key = content.values()
@@ -208,6 +219,7 @@ class RequestHandler(threading.Thread):
             self.client.send(next(packet))
 
     def broadcast_packets(self):
+        print()
         for client in self.chat_id_cli[self.chat_id]:
             if client is not self.client:
                 for packet in self.queue_requests:

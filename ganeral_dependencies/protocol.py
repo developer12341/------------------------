@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from base64 import b64encode
+from tkinter.filedialog import askopenfilename
 from typing import Any, Union
 
 from Crypto.Cipher import AES
@@ -88,10 +89,6 @@ class PacketMaker:
 
         self.amount_of_packets = self.amount_content_packets + self.amount_info_packets
 
-        # edge case - there are too many packets
-        if self.amount_of_packets > 16777216:
-            raise Exception(f"the content is too big :( \namount of packets = {self.amount_of_packets}")
-
         # this part is in every packet so i am making it hear
         self.packet_index = 0
         self.amount_of_packets += self.packet_index
@@ -156,37 +153,43 @@ class PacketMaker:
 
 
 if __name__ == "__main__":
-    group_key = get_random_bytes(32)
-    username = "idodon".encode("utf-8")
-    filepath = os.getcwd() + "\\sample_img.jpeg"
-    packets = PacketMaker(SEND_FILE, file_path=filepath, shared_secret=group_key, username=username)
-    msg_queue = []
-    for packet in packets:
-        print(packet)
-        msg_queue.append(packet)
 
-    username = b''
-    file_name = b''
-    file_content = b''
-    for packet in msg_queue:
-        request, request_id, packet_amount, packet_number, flag = protocol_digest.buffer_extractor(
-            packet[:HEADER_SIZE])
+    while True:
+        group_key = get_random_bytes(32)
+        username = "idodon".encode("utf-8")
+        filepath = askopenfilename()
+        if filepath:
+            request = SEND_FILE
+            file_format = extract_file_name(filepath).split(".")[-1]
+            if file_format.upper() in image_file_formats:
+                request = SEND_IMG
+            packets = PacketMaker(request, shared_secret=group_key, username=username, file_path=filepath)
+            print("starting to send file")
+            msg_queue = []
+            for packet in packets:
+                msg_queue.append(packet)
+            print("sending complete")
 
-        if flag == FILE_NAME_PACKET:
-            file_name += packet[HEADER_SIZE:]
-        if flag == CONTENT_PACKET:
-            file_content += packet[HEADER_SIZE:]
-        if flag == USERNAME_PACKET:
-            username += packet[HEADER_SIZE:]
-    print("username: " + str(username.strip(b'\x00')))
-    print("file_name: " + str(file_name.strip(b'\x00')))
-    print("file_content: " + str(file_content.strip(b'\x00')))
+            username = b''
+            file_name = b''
+            file_content__ = b''
+            for packet in msg_queue:
+                request, request_id, packet_amount, packet_number, flag = protocol_digest.buffer_extractor(
+                    packet[:HEADER_SIZE])
 
-    username = decrypt(username, group_key)
-    print(username)
+                if flag == FILE_NAME_PACKET:
+                    file_name += packet[HEADER_SIZE:]
+                if flag == CONTENT_PACKET:
+                    file_content__ += packet[HEADER_SIZE:]
+                if flag == USERNAME_PACKET:
+                    username += packet[HEADER_SIZE:]
+            print("file_content__: " + str(file_content__))
+            print("file content len: " + str(len(file_content__)))
+            username_ = decrypt(username, group_key)
+            print(username_)
 
-    username = decrypt(file_name, group_key)
-    print(username)
-
-    username = decrypt(file_content, group_key)
-    print(username)
+            # username_ = decrypt(file_name, group_key)
+            # print(username_)
+            #
+            # username_ = decrypt(file_content__, group_key)
+            # print(username_)
